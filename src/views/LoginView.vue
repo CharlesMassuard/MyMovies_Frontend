@@ -10,6 +10,15 @@ const email = ref('');
 const password = ref('');
 const username = ref('');
 
+const emailRules = [
+  v => !!v || 'Email requis',
+  v => /.+@.+\..+/.test(v) || 'L\'email doit être valide'
+];
+const passwordRules = [
+  v => !!v || 'Mot de passe requis',
+  v => v.length >= 6 || 'Le mot de passe doit contenir au moins 6 caractères'
+];
+
 onMounted(() => {
   if (route.path === '/register') {
     isLogin.value = false;
@@ -26,11 +35,11 @@ const handleSubmit = async () => {
     let pwd = password.value;
 
     if(!mail || !pwd) {
-        errorMessage.value = 'Email and password are required.';
+        errorMessage.value = 'L\'email et le mot de passe sont requis.';
         return;
     }
     if(!isLogin.value && !username.value) {
-        errorMessage.value = 'Username is required for registration.';
+        errorMessage.value = 'Le nom d\'utilisateur est requis pour l\'inscription.';
         return;
     }
 
@@ -51,9 +60,9 @@ const handleSubmit = async () => {
         console.log(response.data);
     } catch (error) {
         if (error.response) {
-            errorMessage.value = error.response.data.message || 'An error occurred';
+            errorMessage.value = error.response.data.message || 'Une erreur est survenue lors de l\'authentification.';
         } else {
-            errorMessage.value = 'Network error or server is unreachable';
+            errorMessage.value = 'Erreur réseau ou serveur inaccessible';
         }
     } finally {
         loading.value = false;
@@ -68,7 +77,7 @@ const handleSubmit = async () => {
         <v-alert
             v-if="errorMessage"
             type="error"
-            title="Authentification error"
+            title="Erreur d'authentification"
             :text="errorMessage"
             variant="tonal"
             closable
@@ -99,6 +108,7 @@ const handleSubmit = async () => {
                 label="Email"
                 prepend-icon="mdi-email"
                 type="email"
+                :rules="emailRules"
                 required
             ></v-text-field>
 
@@ -107,6 +117,7 @@ const handleSubmit = async () => {
                 label="Mot de passe"
                 prepend-icon="mdi-lock"
                 type="password"
+                :rules="passwordRules"
                 required
             ></v-text-field>
             </v-form>
