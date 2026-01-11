@@ -57,28 +57,28 @@
     }
 
     .search-bar {
-        max-width: 400px;
-        flex: 1;
-        margin: 0 20px;
+      max-width: 500px;
+      flex: 1;
+      margin: 0 20px;
     }
 
     .search-btn {
-        height: 100% !important;
-        min-width: 50px;
-        border-radius: inherit;
+      height: 100% !important;
+      min-width: 50px;
+      border-radius: inherit;
     }
 
     .custom-append :deep(.v-field__append-inner) {
-        padding-top: 0;
-        align-items: center;
-        margin-inline-start: 0;
+      padding-top: 0;
+      align-items: center;
+      margin-inline-start: 0;
     }
 
     .custom-append :deep(.v-field--variant-outlined) {
-        padding-inline-end: 0;
+      padding-inline-end: 0;
     }
 
     .logo {
-        height: 60px;
+      height: 60px;
     }
 </style>
