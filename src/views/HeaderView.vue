@@ -16,7 +16,7 @@
       rounded="xl" 
       class="search-bar custom-append"
       hide-details
-      placeholder="Inception, Interstellar, Zootopie    , ..."
+      placeholder="Inception, Interstellar, Zootopie, ..."
     >
       <template v-slot:append-inner>
         <v-btn color="#8C52FF" rounded="xl" variant="flat" class="search-btn">
