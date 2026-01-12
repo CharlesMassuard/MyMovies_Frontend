@@ -6,49 +6,50 @@
 
     <v-text-field 
       clearable 
-      label="Rechercher un film" 
+      label="Rechercher" 
       density="compact" 
-      placeholder="Inception, Interstellar, ..." 
       variant="outlined" 
       rounded="xl" 
       class="search-bar custom-append"
       hide-details
+      placeholder="Inception, Interstellar, Zootopie    , ..."
     >
       <template v-slot:append-inner>
         <v-btn color="#8C52FF" rounded="xl" variant="flat" class="search-btn">
-          <v-icon icon="mdi-magnify" color="white" size="large"></v-icon>
+          <v-icon icon="mdi-magnify" color="white"></v-icon>
         </v-btn>
       </template>
     </v-text-field>
 
     <div class="header-section">
-      <v-btn prepend-icon="mdi-account" text="white" to="/login" rounded="xl" color="#8C52FF" variant="flat">
-        Charles Massuard
+      <v-btn 
+        to="/login" 
+        rounded="xl" 
+        color="#8C52FF" 
+        variant="flat"
+        :icon="$vuetify.display.smAndDown"
+      >
+        <v-icon v-if="$vuetify.display.smAndDown">mdi-account</v-icon>
+        <template v-else>
+          <v-icon start>mdi-account</v-icon>
+          Se Connecter
+        </template>
       </v-btn>
     </div>
   </v-app-bar>
 </template>
 
 <style scoped>
-    v-app-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-        width: 100%;
-        z-index: 10;
-        border-bottom: 0.7px solid #ccc;
-        background-color: white;
-    }
-
     .v-toolbar {
         border-bottom: 1px solid #e0e0e0 !important;
-        padding: 10px 20px !important;
+        padding: 5px 15px !important;
     }
 
     .header-section {
         flex: 1;
         display: flex;
+        align-items: center;
+        min-width: fit-content;
     }
 
     .header-section:last-child {
@@ -57,13 +58,40 @@
 
     .search-bar {
         max-width: 500px;
-        flex: 1;
-        margin: 0 20px;
+        flex: 2;
+        margin: 0 15px;
+        transition: all 0.3s ease;
+    }
+
+    .logo {
+        height: 60px;
+        transition: height 0.3s ease;
+    }
+
+    @media (max-width: 960px) {
+        .logo {
+            height: 45px;
+        }
+        .search-bar {
+            margin: 0 10px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .logo {
+            height: 35px;
+        }
+        .search-bar {
+            margin: 0 5px;
+        }
+        .v-toolbar {
+            padding: 5px 8px !important;
+        }
     }
 
     .search-btn {
         height: 100% !important;
-        min-width: 50px;
+        min-width: 40px;
         border-radius: inherit;
     }
 
@@ -75,9 +103,5 @@
 
     .custom-append :deep(.v-field--variant-outlined) {
         padding-inline-end: 0;
-    }
-
-    .logo {
-        height: 60px;   
     }
 </style>
