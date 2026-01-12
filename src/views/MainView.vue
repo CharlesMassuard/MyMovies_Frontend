@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, onMounted } from 'vue';
+    import { ref, computed, onMounted } from 'vue';
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
@@ -12,6 +12,10 @@
     const currentMonth = String(date.getMonth() + 1).padStart(2, '0');
     const currentDay = String(date.getDate()).padStart(2, '0');
     const currentDateString = `${currentYear}-${currentMonth}-${currentDay}`;
+
+    const filteredInTheaterMovies = computed(() => {
+        return inTheaterMovies.value.filter(movie => movie.release_date <= currentDateString);
+    });
 
     const fetchDayTrending = async () => {
         try {
