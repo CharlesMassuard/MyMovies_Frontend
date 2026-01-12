@@ -1,3 +1,7 @@
+<script setup>
+    import { useAuthStore } from '../stores/auth';
+    const authStore = useAuthStore();
+</script>
 <template>
   <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register'">
     <div class="header-section">
@@ -23,6 +27,7 @@
 
     <div class="header-section">
       <v-btn 
+        v-if="!authStore.isAuthenticated"
         to="/login" 
         rounded="xl" 
         color="#8C52FF" 
@@ -33,6 +38,20 @@
         <template v-else>
           <v-icon start>mdi-account</v-icon>
           Se Connecter
+        </template>
+      </v-btn>
+
+      <v-btn 
+        v-else
+        rounded="xl" 
+        color="#8C52FF" 
+        variant="flat"
+        :icon="$vuetify.display.smAndDown"
+      >
+        <v-icon v-if="$vuetify.display.smAndDown">mdi-account</v-icon>
+        <template v-else>
+          <v-icon start>mdi-account</v-icon>
+          {{ authStore.user?.pseudo || 'Mon Compte' }}
         </template>
       </v-btn>
     </div>

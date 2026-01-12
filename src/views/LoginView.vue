@@ -2,7 +2,9 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import { useAuthStore } from '../stores/auth';
 
+const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const isLogin = ref(true);
@@ -58,6 +60,7 @@ const handleSubmit = async () => {
 
     try {
         const response = await axios.post(apiPath + endpoint, payload);
+        authStore.login(response.data.token, response.data.user);
         router.push('/');
     } catch (error) {
         if (error.response) {
