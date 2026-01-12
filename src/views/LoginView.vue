@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
 const route = useRoute();
+const router = useRouter();
 const isLogin = ref(true);
 const loading = ref(false);
 const email = ref('');
@@ -57,12 +58,12 @@ const handleSubmit = async () => {
 
     try {
         const response = await axios.post(apiPath + endpoint, payload);
-        console.log(response.data);
+        router.push('/');
     } catch (error) {
         if (error.response) {
             errorMessage.value = error.response.data.message || 'Une erreur est survenue lors de l\'authentification.';
         } else {
-            errorMessage.value = 'Erreur réseau ou serveur inaccessible';
+            errorMessage.value = 'Une erreur est survenue. Veuillez réessayer plus tard.';
         }
     } finally {
         loading.value = false;
@@ -86,7 +87,7 @@ const handleSubmit = async () => {
         ></v-alert>
 
         <v-card class="elevation-12" :loading="loading" rounded="lg">
-        <v-toolbar color="deep-purple" dark flat>
+        <v-toolbar color="#8C52FF" dark flat>
             <v-toolbar-title>
             {{ isLogin ? 'Connexion' : 'Inscription' }}
             </v-toolbar-title>
@@ -125,7 +126,7 @@ const handleSubmit = async () => {
 
         <v-card-actions class="flex-column">
             <v-btn
-            color="deep-purple"
+            color="#8C52FF"
             block
             :loading="loading"
             @click="handleSubmit"
@@ -147,9 +148,3 @@ const handleSubmit = async () => {
     </v-row>
 </v-container>
 </template>
-
-<style scoped>
-    .fill-height {
-        min-height: 100vh;
-    }
-</style>
