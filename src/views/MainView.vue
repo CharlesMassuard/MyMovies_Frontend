@@ -3,7 +3,8 @@
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
-    const trendingMovies = ref([]);
+    const dayTrendingMovies = ref([]);
+    const popularMovies = ref([]);
     const inTheaterMovies = ref([]);
 
     const date = new Date();
@@ -12,11 +13,21 @@
     const currentDay = String(date.getDate()).padStart(2, '0');
     const currentDateString = `${currentYear}-${currentMonth}-${currentDay}`;
 
-    const fetchTrendingMovies = async () => {
+    const fetchDayTrending = async () => {
+        try {
+            const response = await fetch(`${apiPath}/movies/trending/day`);
+            const data = await response.json();
+            dayTrendingMovies.value = data.results;
+        } catch (error) {
+            console.error('Error fetching day trending movies:', error);
+        }
+    };
+
+    const fetchPopularMovies = async () => {
         try {
             const response = await fetch(`${apiPath}/movies/trending`);
             const data = await response.json();
-            trendingMovies.value = data.results;
+            popularMovies.value = data.results;
         } catch (error) {
             console.error('Error fetching trending movies:', error);
         }
@@ -34,7 +45,8 @@
     };
 
     onMounted(() => {
-        fetchTrendingMovies();
+        fetchDayTrending();
+        fetchPopularMovies();
         fetchInTheaterMovies();
     });
 </script>
@@ -42,10 +54,39 @@
 <template>
   <v-container fluid class="pa-0">
     <div class="py-8">
-      <h1 class="text-h5 font-weight-bold mb-2 section-title">Les Tendances</h1>
+      <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
 
       <v-slide-group :show-arrows="false" class="full-width-slide">
-        <v-slide-group-item v-for="(movie, index) in trendingMovies" :key="movie.id">
+        <v-slide-group-item v-for="(movie, index) in dayTrendingMovies" :key="movie.id">
+          <div class="card-container ma-4">
+            
+            <div class="border-wrapper">
+              <v-card
+                class="movie-card"
+                rounded="l"
+                width="150"
+                flat
+                v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
+              >
+                <v-img
+                  :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
+                  cover
+                  aspect-ratio="2/3"
+                  class="movie-img"
+                ></v-img>
+              </v-card>
+            </div>
+            
+            <span class="ranking-number">{{ index + 1 }}</span>
+          </div>
+        </v-slide-group-item>
+      </v-slide-group>
+    </div>
+    <div class="pb-8">
+      <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
+
+      <v-slide-group :show-arrows="false" class="full-width-slide">
+        <v-slide-group-item v-for="(movie, index) in popularMovies" :key="movie.id">
           <div class="card-container ma-4">
             
             <div class="border-wrapper">
