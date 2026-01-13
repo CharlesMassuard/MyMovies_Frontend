@@ -7,11 +7,14 @@ import { useAuthStore } from '../stores/auth';
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const isLogin = ref(true);
+const isLogin = ref(true);  
 const loading = ref(false);
 const email = ref('');
 const password = ref('');
 const username = ref('');
+const usernameField = ref(null);
+const emailField = ref(null);
+const passwordField = ref(null);
 
 const emailRules = [
   v => !!v || 'Email requis',
@@ -29,6 +32,14 @@ onMounted(() => {
     isLogin.value = true;
   }
 });
+
+const focusEmail = () => {
+    emailField.value?.focus?.();
+};
+
+const focusPassword = () => {
+    passwordField.value?.focus?.();
+};
 
 const errorMessage = ref('');
 
@@ -104,6 +115,8 @@ const handleSubmit = async () => {
                 label="Nom d'utilisateur"
                 prepend-icon="mdi-account"
                 type="text"
+                ref="usernameField"
+                @keydown.enter.prevent="focusEmail"
                 required
             ></v-text-field>
 
@@ -113,6 +126,8 @@ const handleSubmit = async () => {
                 prepend-icon="mdi-email"
                 type="email"
                 :rules="emailRules"
+                ref="emailField"
+                @keydown.enter.prevent="focusPassword"
                 required
             ></v-text-field>
 
@@ -122,30 +137,33 @@ const handleSubmit = async () => {
                 prepend-icon="mdi-lock"
                 type="password"
                 :rules="passwordRules"
+                ref="passwordField"
+                @keydown.enter.prevent="handleSubmit"
                 required
             ></v-text-field>
+
+            <v-card-actions class="flex-column">
+                <v-btn
+                color="#8C52FF"
+                block
+                type="submit"
+                :loading="loading"
+                :disabled="email === '' || password === '' || (!isLogin && username === '')"
+                >
+                {{ isLogin ? 'Se connecter' : "S'inscrire" }}
+                </v-btn>
+                
+                <v-btn
+                variant="text"
+                class="mt-2"
+                type="button"
+                @click="isLogin = !isLogin"
+                >
+                {{ isLogin ? "Pas de compte ? Créer un compte" : "Déjà un compte ? Se connecter" }}
+                </v-btn>
+            </v-card-actions>
             </v-form>
         </v-card-text>
-
-        <v-card-actions class="flex-column">
-            <v-btn
-            color="#8C52FF"
-            block
-            :loading="loading"
-            @click="handleSubmit"
-            :disabled="email === '' || password === '' || (!isLogin && username === '')"
-            >
-            {{ isLogin ? 'Se connecter' : "S'inscrire" }}
-            </v-btn>
-            
-            <v-btn
-            variant="text"
-            class="mt-2"
-            @click="isLogin = !isLogin"
-            >
-            {{ isLogin ? "Pas de compte ? Créer un compte" : "Déjà un compte ? Se connecter" }}
-            </v-btn>
-        </v-card-actions>
         </v-card>
     </v-col>
     </v-row>
