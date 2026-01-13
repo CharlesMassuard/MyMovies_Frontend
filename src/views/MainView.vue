@@ -1,5 +1,6 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
+    import axios from 'axios'; // Importation d'axios
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
@@ -19,9 +20,8 @@
 
     const fetchDayTrending = async () => {
         try {
-            const response = await fetch(`${apiPath}/movies/trending/day`);
-            const data = await response.json();
-            dayTrendingMovies.value = data.results;
+            const response = await axios.get(`${apiPath}/movies/trending/day`);
+            dayTrendingMovies.value = response.data.results;
         } catch (error) {
             console.error('Error fetching day trending movies:', error);
         }
@@ -29,9 +29,8 @@
 
     const fetchPopularMovies = async () => {
         try {
-            const response = await fetch(`${apiPath}/movies/trending`);
-            const data = await response.json();
-            popularMovies.value = data.results;
+            const response = await axios.get(`${apiPath}/movies/trending`);
+            popularMovies.value = response.data.results;
         } catch (error) {
             console.error('Error fetching trending movies:', error);
         }
@@ -39,10 +38,8 @@
 
     const fetchInTheaterMovies = async () => {
         try {
-            const response = await fetch(`${apiPath}/movies/in-theater`);
-            const data = await response.json();
-            inTheaterMovies.value = data.results;
-            console.log(data.results);
+            const response = await axios.get(`${apiPath}/movies/in-theater`);
+            inTheaterMovies.value = response.data.results;
         } catch (error) {
             console.error('Error fetching in-theater movies:', error);
         }
