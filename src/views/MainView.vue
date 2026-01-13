@@ -119,8 +119,8 @@
       <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
 
       <v-slide-group :show-arrows="false" class="full-width-slide">
-        <v-slide-group-item v-for="(movie, index) in inTheaterMovies" :key="movie.id">
-          <div class="card-container ma-4" v-if="movie.release_date <= currentDateString">
+        <v-slide-group-item v-for="(movie, index) in filteredInTheaterMovies" :key="movie.id">
+          <div class="card-container ma-4">
             
             <div class="border-wrapper">
               <v-card
