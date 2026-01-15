@@ -1,6 +1,7 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
     import axios from 'axios'; // Importation d'axios
+    import noPoster from '../assets/noPosterAvailable.webp';
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
@@ -70,7 +71,7 @@
                 v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
               >
                 <v-img
-                  :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
+                  :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster"
                   cover
                   aspect-ratio="2/3"
                   class="movie-img"
@@ -99,7 +100,7 @@
                 v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
               >
                 <v-img
-                  :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
+                  :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster"
                   cover
                   aspect-ratio="2/3"
                   class="movie-img"
@@ -128,7 +129,7 @@
                 v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
               >
                 <v-img
-                  :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
+                  :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster"
                   cover
                   aspect-ratio="2/3"
                   class="movie-img"
