@@ -3,6 +3,7 @@
     import { ref, watch } from 'vue';
     import { useRouter } from 'vue-router';
     import axios from 'axios';
+    import noPoster from '../assets/noPosterAvailable.webp';
 
     const router = useRouter();
     const authStore = useAuthStore();
@@ -37,6 +38,7 @@
             });
             suggestions.value = response.data.results.slice(0, 15);
             showDropdown.value = suggestions.value.length > 0;
+            console.log('Suggestions:', suggestions.value);
         } catch (error) {
             console.error('Erreur suggestions:', error);
         } finally {
@@ -108,7 +110,7 @@
             <template v-slot:prepend>
               <div class="poster-container">
                 <v-img 
-                  :src="`https://image.tmdb.org/t/p/w92${movie.poster_path}`"
+                  :src="movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : noPoster"
                   aspect-ratio="2/3"
                   cover
                   class="poster-img"
