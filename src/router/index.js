@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import MainView from '../views/MainView.vue'
 import { useAuthStore } from '../stores/auth';
 import MovieDetailsView from '../views/MovieDetailsView.vue';
+import NotFoundView from '../views/NotFoundView.vue';
 
 const routes = [
     {
@@ -23,6 +24,13 @@ const routes = [
         name: 'movieDetails',
         component: MovieDetailsView,
         meta: { public: true }
+    },
+    //404
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'notFound',
+      component: NotFoundView,
+      meta: { public: true, hideHeader: true }
     }
 ]
 
