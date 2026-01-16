@@ -15,13 +15,21 @@
     const loadingSuggestions = ref(false);
     let debounceTimer = null;
 
-    const performSearch = () => {
-        if (!searchQuery.value.trim()) return;
-        showDropdown.value = false;
-        router.push({
-            path: '/search',
-            query: { search: searchQuery.value }
-        });
+    const profilItems = [
+        { title: 'Mon Profil', icon: 'mdi-account' },
+        { title: 'Ma Bibliothèque', icon: 'mdi-library-shelves' },
+        { title: 'Déconnexion', icon: 'mdi-logout' }
+    ];
+
+    const handleProfilClick = (item) => {
+        if (item.title === 'Déconnexion') {
+            authStore.logout();
+            router.push('/login');
+        } else if (item.title === 'Mon Profil') {
+            router.push('/profile');
+        } else if (item.title === 'Ma Bibliothèque') {
+            router.push('/library');
+        }
     };
 
     const fetchSuggestions = async (query) => {
@@ -38,7 +46,6 @@
             });
             suggestions.value = response.data.results.slice(0, 15);
             showDropdown.value = suggestions.value.length > 0;
-            console.log('Suggestions:', suggestions.value);
         } catch (error) {
             console.error('Erreur suggestions:', error);
         } finally {
@@ -61,7 +68,11 @@
     const selectSuggestion = (movie) => {
         searchQuery.value = movie.title;
         showDropdown.value = false;
-        performSearch();
+        accessFilm(movie.id);
+    };
+
+    const accessFilm = (movieId) => {
+        router.push({ path: `/movie/${movieId}` });
     };
 
     const returnMain = () => {
@@ -89,7 +100,6 @@
               class="search-bar custom-append"
               hide-details
               v-model="searchQuery"
-              @keydown.enter.prevent="performSearch"
               @focus="searchQuery.length >= 3 ? showDropdown = true : null"
           >
             <template v-slot:append-inner>
@@ -125,15 +135,54 @@
     </div>
 
     <div class="header-section">
+      <v-menu 
+        v-if="authStore.isAuthenticated"
+        open-on-hover 
+        :close-on-content-click="true" 
+        location="bottom end"
+        offset="10"
+      >
+        <template v-slot:activator="{ props }">
+            <v-btn 
+                rounded="xl" 
+                color="#8C52FF" 
+                variant="flat"
+                v-bind="props"
+                :icon="$vuetify.display.smAndDown"
+            >
+                <v-icon :start="!$vuetify.display.smAndDown">mdi-account-circle</v-icon>
+                <span v-if="!$vuetify.display.smAndDown">{{ authStore.user?.pseudo }}</span>
+            </v-btn>
+        </template>
+
+        <v-list class="profil-dropdown pa-2" width="220" elevation="12" rounded="lg">
+            <v-list-item
+                v-for="(item, index) in profilItems"
+                :key="index"
+                @click="handleProfilClick(item)"
+                rounded="md"
+                class="mb-1"
+                :base-color="item.title === 'Déconnexion' ? 'error' : ''"
+            >
+                <template v-slot:prepend>
+                    <v-icon :icon="item.icon" size="small"></v-icon>
+                </template>
+                <v-list-item-title class="text-body-2 font-weight-medium">
+                    {{ item.title }}
+                </v-list-item-title>
+            </v-list-item>
+        </v-list>
+      </v-menu>
+
       <v-btn 
+        v-else
+        to="/login"
         rounded="xl" 
         color="#8C52FF" 
         variant="flat"
-        :icon="$vuetify.display.smAndDown"
-        :to="!authStore.isAuthenticated ? '/login' : undefined"
+        class="px-6"
       >
-        <v-icon start>mdi-account</v-icon>
-        {{ authStore.isAuthenticated ? (authStore.user?.pseudo || 'Compte') : 'Se Connecter' }}
+        Se Connecter
       </v-btn>
     </div>
   </v-app-bar>
@@ -166,6 +215,11 @@
     .dropdown-list::-webkit-scrollbar-thumb {
         background: #4f4f4f;
         border-radius: 10px;
+    }
+
+    .suggestion-item:hover {
+        background-color: #f8f5ff;
+        cursor: pointer;
     }
 
     .poster-container {
@@ -219,6 +273,11 @@
         flex: 2;
         margin: 0 15px;
         transition: all 0.3s ease;
+    }
+
+    .profil-dropdown {
+        border: 1px solid #f0f0f0;
+        background: white !important;
     }
 
     @media (max-width: 960px) {
