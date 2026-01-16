@@ -81,7 +81,7 @@
 </script>
 
 <template>
-  <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register'">
+    <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideHeader">
     <div class="header-section">
       <img src="../assets/LogoMyMoviesTxt.webp" alt="MyMovies Logo" class="logo" @click="returnMain" />
     </div>
@@ -103,7 +103,7 @@
               @focus="searchQuery.length >= 3 ? showDropdown = true : null"
           >
             <template v-slot:append-inner>
-              <v-btn color="#8C52FF" rounded="xl" variant="flat" class="search-btn" @click="performSearch">
+              <v-btn color="#8C52FF" rounded="xl" variant="flat" class="search-btn">
                 <v-icon icon="mdi-magnify" color="white"></v-icon>
               </v-btn>
             </template>
