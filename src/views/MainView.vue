@@ -1,6 +1,6 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
-    import axios from 'axios'; // Importation d'axios
+    import axios from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
@@ -8,6 +8,16 @@
     const dayTrendingMovies = ref([]);
     const popularMovies = ref([]);
     const inTheaterMovies = ref([]);
+
+    const sliderTrending = ref(null);
+    const sliderPopular = ref(null);
+    const sliderInTheater = ref(null);
+
+    const scroll = (ref, direction) => {
+        const el = ref.$el.querySelector('.v-slide-group__container');
+        const scrollAmount = 500;
+        el.scrollBy({ left: direction === 'next' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+    };
 
     const date = new Date();
     const currentYear = date.getFullYear();
@@ -56,12 +66,17 @@
 <template>
   <v-container fluid class="pa-0">
     <div class="py-8">
-      <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
+      <div class="d-flex align-center justify-space-between section-header">
+        <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
+        <div class="navigation-arrows">
+          <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderTrending, 'prev')"></v-btn>
+          <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderTrending, 'next')"></v-btn>
+        </div>
+      </div>
 
-      <v-slide-group :show-arrows="false" class="full-width-slide">
+      <v-slide-group ref="sliderTrending" :show-arrows="false" class="full-width-slide">
         <v-slide-group-item v-for="(movie, index) in dayTrendingMovies" :key="movie.id">
           <div class="card-container ma-4">
-            
             <div class="border-wrapper">
               <v-card
                 class="movie-card"
@@ -79,19 +94,24 @@
                 ></v-img>
               </v-card>
             </div>
-            
             <span class="ranking-number">{{ index + 1 }}</span>
           </div>
         </v-slide-group-item>
       </v-slide-group>
     </div>
-    <div class="pb-8">
-      <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
 
-      <v-slide-group :show-arrows="false" class="full-width-slide">
+    <div class="pb-8">
+      <div class="d-flex align-center justify-space-between section-header">
+        <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
+        <div class="navigation-arrows">
+          <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderPopular, 'prev')"></v-btn>
+          <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderPopular, 'next')"></v-btn>
+        </div>
+      </div>
+
+      <v-slide-group ref="sliderPopular" :show-arrows="false" class="full-width-slide">
         <v-slide-group-item v-for="(movie, index) in popularMovies" :key="movie.id">
           <div class="card-container ma-4">
-            
             <div class="border-wrapper">
               <v-card
                 class="movie-card"
@@ -109,19 +129,24 @@
                 ></v-img>
               </v-card>
             </div>
-            
             <span class="ranking-number">{{ index + 1 }}</span>
           </div>
         </v-slide-group-item>
       </v-slide-group>
     </div>
-    <div>
-      <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
 
-      <v-slide-group :show-arrows="false" class="full-width-slide">
+    <div>
+      <div class="d-flex align-center justify-space-between section-header">
+        <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
+        <div class="navigation-arrows">
+          <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderInTheater, 'prev')"></v-btn>
+          <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderInTheater, 'next')"></v-btn>
+        </div>
+      </div>
+
+      <v-slide-group ref="sliderInTheater" :show-arrows="false" class="full-width-slide">
         <v-slide-group-item v-for="(movie, index) in filteredInTheaterMovies" :key="movie.id">
           <div class="card-container ma-4">
-            
             <div class="border-wrapper">
               <v-card
                 class="movie-card"
@@ -153,11 +178,22 @@
         width: 95.5vw;
     }
 
+    .section-header {
+        width: 95.5vw;
+        margin-left: 30px;
+    }
+
+    .navigation-arrows {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 10px;
+    }
+
     .section-title {
         position: relative;
-        margin-left: 30px !important;
         padding-bottom: 15px;
         display: inline-block;
+        margin-left: 0 !important;
     }
 
     .section-title::after {
