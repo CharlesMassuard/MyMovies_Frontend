@@ -69,6 +69,7 @@
                 width="150"
                 flat
                 v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
+                @click="$router.push(`/movie/${movie.id}`)"
               >
                 <v-img
                   :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster"
@@ -98,6 +99,7 @@
                 width="150"
                 flat
                 v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
+                @click="$router.push(`/movie/${movie.id}`)"
               >
                 <v-img
                   :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster"
@@ -127,6 +129,7 @@
                 width="150"
                 flat
                 v-tooltip="{ text: movie.title, openDelay: 500, location: 'bottom' }"
+                @click="$router.push(`/movie/${movie.id}`)"
               >
                 <v-img
                   :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster"
