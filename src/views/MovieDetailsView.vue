@@ -13,7 +13,11 @@
   
   const dialog = ref(false);
   const dialogDate = ref(false);
+  const dialogNote = ref(false);
   const selectedDate = ref(new Date());
+
+  const userRating = ref(0);
+  const userComment = ref("");
 
   const changeDateViewed = () => {
     dialogDate.value = true;
@@ -90,17 +94,43 @@
           headers: { Authorization: `Bearer ${token}` }
         });
         const watchedDate = new Date(watchedResponse.data);
-        console.log(watchedDate, watchedResponse);
         const day = String(watchedDate.getDate()).padStart(2, '0');
         const month = String(watchedDate.getMonth() + 1).padStart(2, '0');
         const year = watchedDate.getFullYear();
         textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
-        textButtonStatus["WATCHED"].text = textVuAvecDate.value;
       }
     } catch (error) {
       console.error('Error fetching status:', error);
     }
   };
+
+  const fetchRating = async () => {
+    try {
+      const token = localStorage.getItem('user_token');
+      if (!token) return;
+
+      const response = await axios.get(`${API_BASE_URL}/user/movies/rating/${movieId.value}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const responseComment = await axios.get(`${API_BASE_URL}/user/movies/comment/${movieId.value}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      userComment.value = responseComment.data || "";
+      userRating.value = response.data || 0;
+
+      console.log('Fetched rating:', userRating.value, 'Fetched comment:', userComment.value);
+    } catch (error) {
+      console.error('Error fetching rating:', error);
+      userRating.value = 0;
+    }
+  };
+
+  const displayRating = computed(() => {
+    console.log('userRating value:', userRating.value);
+    return userRating.value > 0 ? `${userRating.value}/10` : 'Noter';
+  });
 
   const handleMainButtonClick = () => {
     if (statusUserMovie.value === "UNDEFINED") {
@@ -182,17 +212,50 @@
     }
   };
 
+  const saveRating = async () => {
+    try {
+      if(userRating.value < 1 || userRating.value > 10) {
+        return;
+      }
+      if(userComment.value.length > 500) {
+        alert('Le commentaire ne doit pas dépasser 500 caractères.');
+        return;
+      }
+      if(statusUserMovie.value !== "WATCHED") {
+        await updateStatus("WATCHED");
+      }
+
+      const token = localStorage.getItem('user_token');
+      await axios.put(`${API_BASE_URL}/user/movies/rate/${movieId.value}`, 
+        { 
+          rating: userRating.value,
+          comment: userComment.value
+        }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la note :', error);
+    }
+    dialogNote.value = false; //fermeture du dialog
+  };
+
   onMounted(() => {
     fetchDetailsMovies();
     fetchStatusUserMovie();
+    fetchRating();
   });
 
   watch(() => movieId.value, () => {
     movieDetails.value = {};
     movieCredits.value = {};
     statusUserMovie.value = "UNDEFINED";
+    // On réinitialise la note et le commentaire pour le nouveau film
+    userRating.value = 0;
+    userComment.value = "";
+    
     fetchDetailsMovies();
     fetchStatusUserMovie();
+    fetchRating(); // Ne pas oublier de le relancer ici aussi
   });
 
   const allGenres = computed(() => {
@@ -291,9 +354,10 @@
                 variant="flat"
                 :icon="$vuetify.display.smAndDown"
                 class="ml-5"
+                @click="dialogNote = true"
               >
                 <v-icon :start="!$vuetify.display.smAndDown">mdi-star</v-icon>
-                <span>Noter</span>
+                <span>{{ displayRating }}</span>
               </v-btn>
             </div>
 
@@ -334,44 +398,21 @@
       </v-row>
     </v-container>
   </div>
-  <v-dialog
-    v-model="dialog"
-    width="500"
-  >
-    <v-card
-      prepend-icon="mdi-delete-alert"
-      title="Confirmation"
-      text="Voulez-vous vraiment retirer ce film de votre liste ?"
-    >
+
+  <v-dialog v-model="dialog" width="500">
+    <v-card prepend-icon="mdi-delete-alert" title="Confirmation" text="Voulez-vous vraiment retirer ce film de votre liste ?">
       <template v-slot:actions>
         <v-spacer></v-spacer>
-        <v-btn
-          text="Annuler"
-          variant="text"
-          rounded="l"
-          @click="dialog = false"
-        ></v-btn>
-        <v-btn
-          color="error"
-          variant="flat"
-          text="Supprimer"
-          rounded="l"
-          @click="confirmDelete"
-        ></v-btn>
+        <v-btn text="Annuler" variant="text" @click="dialog = false"></v-btn>
+        <v-btn color="error" variant="flat" text="Supprimer" @click="confirmDelete"></v-btn>
       </template>
     </v-card>
   </v-dialog>
+
   <v-dialog v-model="dialogDate" width="auto">
     <v-card title="Quand avez-vous vu ce film ?">
       <v-card-text class="pa-0">
-        <v-date-picker
-          v-model="selectedDate"
-          color="#8C52FF"
-          hide-headerd
-          show-adjacent-months
-          control-variant="modal"
-          :max="new Date()"
-        ></v-date-picker>
+        <v-date-picker v-model="selectedDate" color="#8C52FF" hide-header show-adjacent-months control-variant="modal" :max="new Date()"></v-date-picker>
       </v-card-text>
       <v-divider></v-divider>
       <v-card-actions>
@@ -379,6 +420,75 @@
         <v-btn text="Annuler" variant="text" @click="dialogDate = false"></v-btn>
         <v-btn color="#8C52FF" variant="flat" text="Confirmer" @click="confirmDateChange"></v-btn>
       </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="dialogNote" width="450px">
+    <v-card class="pa-4 rounded-xl relative">
+      <div class="d-flex align-center justify-center mb-4">
+        <v-card-title class="pa-0 font-weight-bold">Noter ce film</v-card-title>
+        <v-btn
+          icon="mdi-close"
+          variant="text"
+          density="comfortable"
+          position="absolute"
+          style="right: 16px; top: 16px"
+          @click="dialogNote = false"
+        ></v-btn>
+      </div>
+
+      <v-textarea
+        v-model="userComment"
+        placeholder="Écrivez ce que vous voulez retenir..."
+        variant="outlined"
+        rounded="lg"
+        auto-grow
+        rows="4"
+        class="mb-6 comment-area"
+        hide-details
+      ></v-textarea>
+
+      <div class="d-flex justify-space-between mb-8 px-1">
+        <v-slide-group
+          v-model="userRating"
+          class="pa-0 mb-8"
+          selected-class="selected-rating"
+          mandatory
+          center-active
+        >
+        <v-slide-group-item
+          v-for="n in 10"
+          :key="n"
+          :value="n"
+          v-slot="{ isSelected, toggle }"
+        >
+          <v-card
+            :color="isSelected ? '#8C52FF' : 'white'"
+            :class="[
+              'ma-2 d-flex align-center justify-center rating-card elevation-2',
+              isSelected ? 'text-white' : 'text-grey-darken-3'
+            ]"
+            height="40"
+            width="40"
+            rounded="lg"
+            @click="toggle"
+          >
+            <span class="text-h6 font-weight-bold">{{ n }}</span>
+          </v-card>
+        </v-slide-group-item>
+      </v-slide-group>
+      </div>
+
+      <v-btn
+        block
+        color="#6236FF"
+        size="large"
+        rounded="xl"
+        class="text-none font-weight-bold text-white elevation-0"
+        @click="saveRating"
+      >
+        Sauvegarder
+      </v-btn>
     </v-card>
   </v-dialog>
 </template>
@@ -449,6 +559,28 @@
 .overflow-x-auto {
   scrollbar-width: thin;
   scrollbar-color: #dbdbdb transparent;
+}
+
+.period-select :deep(.v-field__outline) {
+  --v-field-border-opacity: 0.1;
+}
+
+.comment-area :deep(.v-field__outline) {
+  --v-field-border-opacity: 0.1;
+}
+
+.rating-box {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  border: 1px solid #e0e0e0 !important;
+  background-color: white !important;
+  transition: all 0.2s ease;
+}
+
+.selected-rating {
+  background-color: #8C52FF !important;
+  border-color: #8C52FF !important;
 }
 
 @media (max-width: 960px) {
