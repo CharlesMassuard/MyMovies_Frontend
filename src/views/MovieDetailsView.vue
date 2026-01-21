@@ -12,17 +12,23 @@
   const directors = ref([]);
   
   const dialog = ref(false);
+  const dialogDate = ref(false);
+  const selectedDate = ref(new Date());
+
+  const changeDateViewed = () => {
+    dialogDate.value = true;
+  };
 
   const statusUserMovie = ref("UNDEFINED");
 
   const textVuAvecDate = ref("Vu")
 
-  const textButtonStatus = {
+  const textButtonStatus = computed(() => ({
     "WATCHED": { text: textVuAvecDate.value, icon: "mdi-check-all" },
     "WATCHING": { text: "En cours", icon: "mdi-play-circle-outline" },
     "TO_WATCH": { text: "À voir", icon: "mdi-clock-outline" },
     "UNDEFINED": { text: "Ajouter à ma liste de lecture", icon: "mdi-plus" }
-  };
+  }));
 
   const allActions = [
     { id: 'TO_WATCH', text: 'À voir', icon: 'mdi-clock-outline' },
@@ -119,6 +125,11 @@
       dialog.value = true;
       return;
     }
+
+    if(newStatus === 'DATE') {
+      changeDateViewed();
+      return;
+    }
     
     try {
       const token = localStorage.getItem('user_token');
@@ -142,6 +153,32 @@
       dialog.value = false;
     } catch (error) {
       console.error('Erreur lors de la suppression :', error);
+    }
+  };
+
+  const confirmDateChange = async () => {
+    try {
+      const token = localStorage.getItem('user_token');
+      
+      const year = selectedDate.value.getFullYear();
+      const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.value.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`; 
+      
+      await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, 
+        { 
+          status: "WATCHED",
+          watchedAt: formattedDate 
+        }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
+      statusUserMovie.value = "WATCHED";
+      
+      dialogDate.value = false;
+    } catch (error) {
+      console.error('Erreur lors du changement de date :', error);
     }
   };
 
@@ -322,6 +359,25 @@
           @click="confirmDelete"
         ></v-btn>
       </template>
+    </v-card>
+  </v-dialog>
+  <v-dialog v-model="dialogDate" width="auto">
+    <v-card title="Quand avez-vous vu ce film ?">
+      <v-card-text class="pa-0">
+        <v-date-picker
+          v-model="selectedDate"
+          color="#8C52FF"
+          hide-header
+          show-adjacent-months
+          control-variant="modal"
+        ></v-date-picker>
+      </v-card-text>
+      <v-divider></v-divider>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn text="Annuler" variant="text" @click="dialogDate = false"></v-btn>
+        <v-btn color="#8C52FF" variant="flat" text="Confirmer" @click="confirmDateChange"></v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
