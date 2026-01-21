@@ -367,9 +367,10 @@
         <v-date-picker
           v-model="selectedDate"
           color="#8C52FF"
-          hide-header
+          hide-headerd
           show-adjacent-months
           control-variant="modal"
+          :max="new Date()"
         ></v-date-picker>
       </v-card-text>
       <v-divider></v-divider>
