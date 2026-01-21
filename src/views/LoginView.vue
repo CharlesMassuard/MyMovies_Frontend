@@ -61,7 +61,7 @@ const handleSubmit = async () => {
     errorMessage.value = '';
     
     const apiPath = import.meta.env.VITE_API_BASE_URL;
-    const endpoint = isLogin.value ? '/user/login' : '/user/register';
+    const endpoint = isLogin.value ? '/auth/login' : '/auth/register';
     
     const payload = {
         mail: mail,
