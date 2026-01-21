@@ -181,6 +181,8 @@
       });
       statusUserMovie.value = "UNDEFINED";
       dialog.value = false;
+      userComment.value = "";
+      userRating.value = 0;
     } catch (error) {
       console.error('Erreur lors de la suppression :', error);
     }
