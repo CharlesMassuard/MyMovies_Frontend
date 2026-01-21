@@ -15,8 +15,10 @@
 
   const statusUserMovie = ref("UNDEFINED");
 
+  const textVuAvecDate = ref("Vu")
+
   const textButtonStatus = {
-    "WATCHED": { text: "Vu", icon: "mdi-check-all" },
+    "WATCHED": { text: textVuAvecDate.value, icon: "mdi-check-all" },
     "WATCHING": { text: "En cours", icon: "mdi-play-circle-outline" },
     "TO_WATCH": { text: "À voir", icon: "mdi-clock-outline" },
     "UNDEFINED": { text: "Ajouter à ma liste de lecture", icon: "mdi-plus" }
@@ -77,6 +79,18 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       statusUserMovie.value = response.data;
+      if(statusUserMovie.value === "WATCHED") {
+        const watchedResponse = await axios.get(`${API_BASE_URL}/user/movies/watched-date/${movieId.value}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const watchedDate = new Date(watchedResponse.data);
+        console.log(watchedDate, watchedResponse);
+        const day = String(watchedDate.getDate()).padStart(2, '0');
+        const month = String(watchedDate.getMonth() + 1).padStart(2, '0');
+        const year = watchedDate.getFullYear();
+        textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
+        textButtonStatus["WATCHED"].text = textVuAvecDate.value;
+      }
     } catch (error) {
       console.error('Error fetching status:', error);
     }
