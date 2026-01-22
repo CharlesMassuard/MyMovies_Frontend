@@ -24,7 +24,7 @@
     const handleProfilClick = (item) => {
         if (item.title === 'Déconnexion') {
             authStore.logout();
-            router.push('/login');
+            router.push('/');
         } else if (item.title === 'Mon Profil') {
             router.push('/profile');
         } else if (item.title === 'Ma Bibliothèque') {
