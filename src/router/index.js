@@ -4,6 +4,7 @@ import MainView from '../views/MainView.vue'
 import { useAuthStore } from '../stores/auth';
 import MovieDetailsView from '../views/MovieDetailsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
+import LibraryView from '../views/LibraryView.vue';
 
 const routes = [
     {
@@ -24,6 +25,12 @@ const routes = [
         name: 'movieDetails',
         component: MovieDetailsView,
         meta: { public: true }
+    },
+    {
+      path: '/library',
+      name: 'library',
+      component: LibraryView,
+      meta: { public: false }
     },
     //404
     {
