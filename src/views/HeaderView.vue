@@ -24,7 +24,6 @@
     const handleProfilClick = (item) => {
         if (item.title === 'Déconnexion') {
             authStore.logout();
-            router.push('/');
         } else if (item.title === 'Mon Profil') {
             router.push('/profile');
         } else if (item.title === 'Ma Bibliothèque') {
@@ -176,7 +175,7 @@
 
       <v-btn 
         v-else
-        to="/login"
+        @click="router.push({path: '/login', query: { redirect: $route.fullPath } })"
         rounded="xl" 
         color="#8C52FF" 
         variant="flat"
