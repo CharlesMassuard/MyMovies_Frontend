@@ -19,6 +19,9 @@
   const userRating = ref(0);
   const userComment = ref("");
 
+  const editRating = ref(0);
+  const editComment = ref("");
+
   const changeDateViewed = () => {
     dialogDate.value = true;
   };
@@ -228,6 +231,9 @@
         return;
       }
 
+      userRating.value = editRating.value;
+      userComment.value = editComment.value;
+
       const token = localStorage.getItem('user_token');
       await axios.put(`${API_BASE_URL}/user/movies/rate/${movieId.value}`, 
         { 
@@ -247,6 +253,13 @@
     fetchDetailsMovies();
     fetchStatusUserMovie();
     fetchRating();
+  });
+
+  watch(dialogNote, (isOpen) => {
+    if (isOpen) {
+      editRating.value = userRating.value;
+      editComment.value = userComment.value;
+    }
   });
 
   watch(() => movieId.value, () => {
@@ -442,7 +455,7 @@
       </div>
 
       <v-textarea
-        v-model="userComment"
+        v-model="editComment"
         placeholder="Écrivez ce que vous voulez retenir..."
         variant="outlined"
         rounded="lg"
@@ -454,7 +467,7 @@
 
       <div class="d-flex justify-space-between mb-8 px-1">
         <v-slide-group
-          v-model="userRating"
+          v-model="editRating"
           class="pa-0 mb-8"
           selected-class="selected-rating"
           mandatory
