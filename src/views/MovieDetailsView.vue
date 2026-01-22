@@ -232,19 +232,17 @@
 
   const saveRating = async () => {
     if (!checkAuth("Connectez-vous pour noter ce film.")) return;
-
     try {
-      if(userRating.value < 1 || userRating.value > 10) {
+      if(editRating.value < 1 || editRating.value > 10) {
         return;
       }
-      if(userComment.value.length > 500) {
+      if(editComment.value.length > 500) {
         alert('Le commentaire ne doit pas dépasser 500 caractères.');
         return;
       }
 
       userRating.value = editRating.value;
       userComment.value = editComment.value;
-
       const token = localStorage.getItem('user_token');
       await axios.put(`${API_BASE_URL}/user/movies/rate/${movieId.value}`, 
         { 
