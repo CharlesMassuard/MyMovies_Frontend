@@ -118,12 +118,16 @@
       });
 
       userComment.value = responseComment.data || "";
+      if(userComment.value === "UNDEFINED" || userComment.value === null || userComment.value === "NO_COMMENT") {
+        userComment.value = "";
+      }
       userRating.value = response.data || 0;
 
       console.log('Fetched rating:', userRating.value, 'Fetched comment:', userComment.value);
     } catch (error) {
       console.error('Error fetching rating:', error);
       userRating.value = 0;
+      userComment.value = "";
     }
   };
 
@@ -223,9 +227,6 @@
         alert('Le commentaire ne doit pas dépasser 500 caractères.');
         return;
       }
-      if(statusUserMovie.value !== "WATCHED") {
-        await updateStatus("WATCHED");
-      }
 
       const token = localStorage.getItem('user_token');
       await axios.put(`${API_BASE_URL}/user/movies/rate/${movieId.value}`, 
@@ -235,6 +236,7 @@
         }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      fetchStatusUserMovie();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde de la note :', error);
     }
