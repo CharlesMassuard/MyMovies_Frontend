@@ -27,6 +27,8 @@
   const editRating = ref(0);
   const editComment = ref("");
 
+  const statusFilm = ref("");
+
   const changeDateViewed = () => {
     dialogDate.value = true;
   };
@@ -51,6 +53,9 @@
   ];
 
   const itemsStatus = computed(() => {
+    if(statusFilm.value !== "Released") {
+      return allActions.filter(i => ['DELETE'].includes(i.id));
+    }
     switch (statusUserMovie.value) {
       case 'TO_WATCH':
         return allActions.filter(i => ['WATCHING', 'WATCHED', 'DELETE'].includes(i.id));
@@ -67,6 +72,8 @@
     try {
       const response = await axios.get(`${API_BASE_URL}/movies/${movieId.value}`);
       movieDetails.value = response.data;
+
+      statusFilm.value = movieDetails.value.status;
 
       if (movieDetails.value.release_date) {
         const [year, month, day] = movieDetails.value.release_date.split('-');
@@ -331,7 +338,8 @@
             <div class="movie-header">
               <h1 class="text-h3 font-weight-bold">{{ movieDetails.title }}</h1>
               <p class="subtitle-info d-flex align-center flex-wrap mt-2">
-                <span>{{ movieDetails.release_date }}</span>
+                <span v-if="statusFilm === 'Released'">{{ movieDetails.release_date }}</span>
+                <span v-else>{{ movieDetails.release_date }} (Non sorti)</span>
                 <span class="mx-2">•</span>
                 <span>{{ allGenres }}</span>
                 <span class="mx-2">•</span>
@@ -399,6 +407,7 @@
                 :icon="$vuetify.display.smAndDown"
                 class="ml-5"
                 @click="openDialogNote()"
+                v-if="statusFilm === 'Released'"
               >
                 <v-icon :start="!$vuetify.display.smAndDown">mdi-star</v-icon>
                 <span>{{ displayRating }}</span>
