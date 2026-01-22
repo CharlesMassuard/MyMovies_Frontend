@@ -72,6 +72,10 @@ const handleSubmit = async () => {
     try {
         const response = await axios.post(apiPath + endpoint, payload);
         authStore.login(response.data.token, response.data.user);
+        if(route.query.redirect) {
+            router.push(route.query.redirect);
+            return;
+        }
         router.push('/');
     } catch (error) {
         if (error.response) {
