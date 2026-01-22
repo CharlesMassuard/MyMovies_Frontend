@@ -280,7 +280,11 @@
 
   watch(dialogNote, (isOpen) => {
     if (isOpen) {
-      editRating.value = userRating.value;
+      if(userRating.value === 0) {
+        editRating.value = 5;
+      } else {
+        editRating.value = userRating.value;
+      }
       editComment.value = userComment.value;
     }
   });
