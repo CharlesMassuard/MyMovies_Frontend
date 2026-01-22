@@ -2,6 +2,7 @@
   import { ref, computed, onMounted, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import axios  from 'axios';
+  import ConfirmationDialog from '../components/ConfirmationDialog.vue';
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -13,7 +14,7 @@
   const movieCredits = ref({});
   const directors = ref([]);
   
-  const dialog = ref(false);
+  const dialogConfirmation = ref(false);
   const dialogDate = ref(false);
   const dialogNote = ref(false);
   const selectedDate = ref(new Date());
@@ -167,7 +168,7 @@
     if (!checkAuth("Connectez-vous pour modifier le statut de ce film.")) return;
 
     if (newStatus === 'DELETE') {
-      dialog.value = true;
+      dialogConfirmation.value = true;
       return;
     }
 
@@ -195,7 +196,7 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       statusUserMovie.value = "UNDEFINED";
-      dialog.value = false;
+      dialogConfirmation.value = false;
       userComment.value = "";
       userRating.value = 0;
     } catch (error) {
@@ -440,15 +441,14 @@
     </v-container>
   </div>
 
-  <v-dialog v-model="dialog" width="500">
-    <v-card prepend-icon="mdi-delete-alert" title="Confirmation" text="Voulez-vous vraiment retirer ce film de votre liste ?">
-      <template v-slot:actions>
-        <v-spacer></v-spacer>
-        <v-btn text="Annuler" variant="text" @click="dialog = false"></v-btn>
-        <v-btn color="error" variant="flat" text="Supprimer" @click="confirmDelete"></v-btn>
-      </template>
-    </v-card>
-  </v-dialog>
+  <ConfirmationDialog
+    v-model="dialogConfirmation"
+    title="Supprimer le film de votre liste"
+    message="Êtes-vous sûr de vouloir supprimer ce film de votre liste ?"
+    confirm-text="Supprimer"
+    cancel-text="Annuler"
+    @confirm="confirmDelete"
+  ></ConfirmationDialog>
 
   <v-dialog v-model="dialogDate" width="auto">
     <v-card title="Quand avez-vous vu ce film ?">
