@@ -4,6 +4,7 @@
     import { useRouter } from 'vue-router';
     import axios from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
+    import ConfirmationDialog from '../components/ConfirmationDialog.vue';
 
     const router = useRouter();
     const authStore = useAuthStore();
@@ -15,6 +16,8 @@
     const loadingSuggestions = ref(false);
     let debounceTimer = null;
 
+    const dialogConfirmation = ref(false);
+
     const profilItems = [
         { title: 'Mon Profil', icon: 'mdi-account' },
         { title: 'Ma Bibliothèque', icon: 'mdi-library-shelves' },
@@ -23,12 +26,18 @@
 
     const handleProfilClick = (item) => {
         if (item.title === 'Déconnexion') {
-            authStore.logout();
+            dialogConfirmation.value = true;
         } else if (item.title === 'Mon Profil') {
             router.push('/profile');
         } else if (item.title === 'Ma Bibliothèque') {
             router.push('/library');
         }
+    };
+
+    const confirmLogout = () => {
+        authStore.logout();
+        dialogConfirmation.value = false;
+        window.location.reload();
     };
 
     const fetchSuggestions = async (query) => {
@@ -185,6 +194,15 @@
       </v-btn>
     </div>
   </v-app-bar>
+
+  <ConfirmationDialog
+    v-model="dialogConfirmation"
+    title="Déconnexion"
+    message="Êtes-vous sûr de vouloir vous déconnecter ?"
+    confirm-text="Déconnecter"
+    cancel-text="Annuler"
+    @confirm="confirmLogout"
+  ></ConfirmationDialog>
 </template>
 
 <style scoped>
