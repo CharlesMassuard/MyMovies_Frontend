@@ -18,8 +18,7 @@
             const response = await axios.get(`${API_BASE_URL}/user/movies`, {
               headers: { Authorization: `Bearer ${token}` }
             });
-            userMovies.value = response.data;
-            console.log(userMovies.value);
+            userMovies.value = response.data.reverse();
         } catch (error) {
             console.error('Error fetching user library:', error);
         }
