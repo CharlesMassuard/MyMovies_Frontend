@@ -1,9 +1,11 @@
 <script setup>
   import { ref, computed, onMounted, watch } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import axios  from 'axios';
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  const router = useRouter();
 
   const route = useRoute();
   const movieId = computed(() => route.params.id);
@@ -15,6 +17,8 @@
   const dialogDate = ref(false);
   const dialogNote = ref(false);
   const selectedDate = ref(new Date());
+  const dialogAuth = ref(false);
+  const authMessage = ref("");
 
   const userRating = ref(0);
   const userComment = ref("");
@@ -125,8 +129,6 @@
         userComment.value = "";
       }
       userRating.value = response.data || 0;
-
-      console.log('Fetched rating:', userRating.value, 'Fetched comment:', userComment.value);
     } catch (error) {
       console.error('Error fetching rating:', error);
       userRating.value = 0;
@@ -135,11 +137,12 @@
   };
 
   const displayRating = computed(() => {
-    console.log('userRating value:', userRating.value);
     return userRating.value > 0 ? `${userRating.value}/10` : 'Noter';
   });
 
   const handleMainButtonClick = () => {
+    if (!checkAuth("Connectez-vous pour ajouter ce film à votre liste.")) return;
+
     if (statusUserMovie.value === "UNDEFINED") {
       addFilmToWatchlist(movieId.value);
     }
@@ -153,11 +156,16 @@
       });
       statusUserMovie.value = "TO_WATCH";
     } catch (error) {
+      if (error.response && error.response.status === 403) {
+        dialogAuth.value = true;
+      }
       console.error('Erreur lors de l\'ajout :', error);
     }
   };
 
   const updateStatus = async (newStatus) => {
+    if (!checkAuth("Connectez-vous pour modifier le statut de ce film.")) return;
+
     if (newStatus === 'DELETE') {
       dialog.value = true;
       return;
@@ -222,6 +230,8 @@
   };
 
   const saveRating = async () => {
+    if (!checkAuth("Connectez-vous pour noter ce film.")) return;
+
     try {
       if(userRating.value < 1 || userRating.value > 10) {
         return;
@@ -248,6 +258,20 @@
     }
     dialogNote.value = false; //fermeture du dialog
   };
+
+  const checkAuth = (message) => {
+    if (!localStorage.getItem('user_token')) {
+      authMessage.value = message;
+      dialogAuth.value = true;
+      return false;
+    }
+    return true;
+  };
+
+  const openDialogNote = () => {
+    if (!checkAuth("Connectez-vous pour noter ce film.")) return;
+    dialogNote.value = true;
+  }
 
   onMounted(() => {
     fetchDetailsMovies();
@@ -371,7 +395,7 @@
                 variant="flat"
                 :icon="$vuetify.display.smAndDown"
                 class="ml-5"
-                @click="dialogNote = true"
+                @click="openDialogNote()"
               >
                 <v-icon :start="!$vuetify.display.smAndDown">mdi-star</v-icon>
                 <span>{{ displayRating }}</span>
@@ -506,6 +530,40 @@
       >
         Sauvegarder
       </v-btn>
+    </v-card>
+  </v-dialog>
+  <v-dialog v-model="dialogAuth" width="400">
+    <v-card class="rounded-xl pa-4">
+      <div class="text-center">
+        <v-icon color="#8C52FF" size="64" class="mb-4">mdi-account-lock</v-icon>
+        <v-card-title class="text-h5 font-weight-bold justify-center">Authentification requise</v-card-title>
+      </div>
+      
+      <v-card-text class="text-center text-body-1 text-grey-darken-1">
+        {{ authMessage || "Vous devez être connecté pour effectuer cette action." }}
+      </v-card-text>
+
+      <v-card-actions class="flex-column ga-2 mt-4">
+        <v-btn
+          block
+          color="#8C52FF"
+          size="large"
+          rounded="xl"
+          variant="flat"
+          @click="router.push({path: '/login', query: { redirect: $route.fullPath } })"
+        >
+          Se connecter
+        </v-btn>
+        
+        <v-btn
+          block
+          variant="text"
+          rounded="xl"
+          @click="dialogAuth = false"
+        >
+          Plus tard
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
