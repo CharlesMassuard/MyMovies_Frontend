@@ -32,8 +32,8 @@
 <template>
   <v-container class="py-8">
     <div class="d-flex align-baseline mb-6">
-      <h2 class="text-h5 font-weight-bold">Mes memories</h2>
-      <span class="text-grey ml-2 text-h6">213</span>
+      <h2 class="text-h5 font-weight-bold">Ma Bibliothèque</h2>
+      <span class="text-grey ml-2 text-h6">({{ userMovies.length }})</span>
     </div>
 
     <v-row>
