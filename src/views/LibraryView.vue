@@ -46,7 +46,7 @@
         lg="2"
         xl="2"
       >
-        <v-card class="rounded-lg overflow-hidden" elevation="0" @click="$router.push(`/movie/${userMovie.movie.id}`)">
+        <v-card class="rounded-lg overflow-hidden" elevation="0" @click="$router.push(`/movie/${userMovie.movie.id}`)" v-tooltip="{ text: userMovie.movie.title, openDelay: 500, location: 'bottom' }">
           <v-img
             :src="userMovie.movie.posterUrl ? `https://image.tmdb.org/t/p/w500${userMovie.movie.posterUrl}` : noPoster"
             aspect-ratio="2/3"
