@@ -16,6 +16,8 @@
     const loadingSuggestions = ref(false);
     let debounceTimer = null;
 
+    const isSelecting = ref(false)
+
     const dialogConfirmation = ref(false);
 
     const profilItems = [
@@ -62,21 +64,28 @@
     };
 
     watch(searchQuery, (newVal) => {
-        clearTimeout(debounceTimer);
+        if (isSelecting.value) return
+        
+        clearTimeout(debounceTimer)
         if (!newVal) {
-            suggestions.value = [];
-            showDropdown.value = false;
-            return;
+            suggestions.value = []
+            showDropdown.value = false
+            return
         }
         debounceTimer = setTimeout(() => {
-            fetchSuggestions(newVal);
-        }, 300);
+            fetchSuggestions(newVal)
+        }, 300)
     });
 
     const selectSuggestion = (movie) => {
-        searchQuery.value = movie.title;
-        showDropdown.value = false;
-        accessFilm(movie.id);
+        isSelecting.value = true
+        searchQuery.value = movie.title
+        showDropdown.value = false
+        accessFilm(movie.id)
+        
+        setTimeout(() => {
+            isSelecting.value = false
+        }, 500)
     };
 
     const accessFilm = (movieId) => {
