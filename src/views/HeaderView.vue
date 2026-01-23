@@ -37,7 +37,7 @@
     const confirmLogout = () => {
         authStore.logout();
         dialogConfirmation.value = false;
-        window.location.reload();
+        globalThis.location.reload();
     };
 
     const fetchSuggestions = async (query) => {

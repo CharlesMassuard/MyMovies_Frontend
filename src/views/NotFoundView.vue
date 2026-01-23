@@ -102,6 +102,7 @@ const returnHome = () => {
 
 .gradient-text {
   background: linear-gradient(135deg, #ffffff 0%, #8C52FF 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
