@@ -278,7 +278,7 @@
       </v-col>
     </v-row>
 
-    <v-dialog v-model="dialogPseudo" max-width="400" persistent>
+    <v-dialog v-model="dialogPseudo" max-width="400">
       <v-card title="Modifier le pseudo" class="pa-4">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
           {{ errorMessage }}
@@ -298,7 +298,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="dialogEmail" max-width="400" persistent>
+    <v-dialog v-model="dialogEmail" max-width="400">
       <v-card title="Modifier l'email" class="pa-4">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
           {{ errorMessage }}
@@ -319,7 +319,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="dialogPass" max-width="400" persistent>
+    <v-dialog v-model="dialogPass" max-width="400">
       <v-card title="Modifier le mot de passe" class="pa-4">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
           {{ errorMessage }}
