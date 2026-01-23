@@ -35,6 +35,15 @@
     const snackbar = ref(false)
     const snackbarText = ref('')
 
+    const emailRules = [
+        v => !!v || 'Email requis',
+        v => /.+@.+\..+/.test(v) || 'L\'email doit être valide'
+    ];
+    const passwordRules = [
+        v => !!v || 'Mot de passe requis',
+        v => v.length >= 6 || 'Le mot de passe doit contenir au moins 6 caractères'
+    ];
+
     const newPasswordFocus = () => {
       newPassword.value?.focus()
     }
@@ -90,24 +99,35 @@
           return;
         }
 
-        await axios.put(`${API_BASE_URL}/auth/update/mail`, { newMail }, {
+        const emailPattern = /.+@.+\..+/;
+        if (!emailPattern.test(newMail)) {
+          errorMessage.value = "L'adresse email n'est pas valide.";
+          return;
+        }
+
+        const response = await axios.put(`${API_BASE_URL}/auth/update/mail`, { newMail }, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
+        const newToken = response.data.token;
+
         const updatedUser = { ...authStore.user, mail: newMail };
+        
         authStore.setUser(updatedUser);
         
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        if (storedUser) {
-          storedUser.mail = newMail;
-          localStorage.setItem('user', JSON.stringify(storedUser));
+        if (newToken) {
+          localStorage.setItem('user_token', newToken);
+          authStore.token = newToken;
         }
 
         tempEmail.value = '';
         dialogEmail.value = false;
+        
+        snackbarText.value = "Email mis à jour avec succès !";
+        snackbar.value = true;
       } catch (error) {
         console.error(error);
-        if (error.response && error.response.status === 409) {
+        if (error.response && error.response.data?.message === 'Email already in use') {
           errorMessage.value = "Cette adresse email est déjà utilisée.";
         } else {
           errorMessage.value = "Une erreur est survenue lors de la mise à jour.";
@@ -126,6 +146,11 @@
 
         if (tempPass.value !== tempPassConfirm.value) {
           errorMessage.value = "Les nouveaux mots de passe ne correspondent pas.";
+          return;
+        }
+
+        if(tempPass.value.length < 6) {
+          errorMessage.value = "Le nouveau mot de passe doit contenir au moins 6 caractères.";
           return;
         }
 
@@ -284,6 +309,7 @@
           label="Nouvel Email"
           variant="underlined"
           type="email"
+          :rules="emailRules"
         ></v-text-field>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -314,6 +340,7 @@
           variant="underlined"
           ref="newPassword"
           @keydown.enter.prevent="newPasswordConfirmFocus"
+          :rules="passwordRules"
         ></v-text-field>
         
         <v-text-field
