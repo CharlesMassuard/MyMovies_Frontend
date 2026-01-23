@@ -28,7 +28,7 @@
         if (item.title === 'Déconnexion') {
             dialogConfirmation.value = true;
         } else if (item.title === 'Mon Profil') {
-            router.push('/profile');
+            router.push('/profil');
         } else if (item.title === 'Ma Bibliothèque') {
             router.push('/library');
         }

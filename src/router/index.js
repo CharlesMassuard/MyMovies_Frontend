@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import MovieDetailsView from '../views/MovieDetailsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import LibraryView from '../views/LibraryView.vue';
+import ProfilView from '../views/ProfilView.vue';
 
 const routes = [
     {
@@ -30,6 +31,12 @@ const routes = [
       path: '/library',
       name: 'library',
       component: LibraryView,
+      meta: { public: false }
+    },
+    {
+      path: '/profil',
+      name: 'profil',
+      component: ProfilView,
       meta: { public: false }
     },
     //404
