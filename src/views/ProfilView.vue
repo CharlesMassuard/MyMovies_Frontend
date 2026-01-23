@@ -15,11 +15,13 @@
     };
 
     const tab = ref('profile')
+    const dialogPseudo = ref(false)
     const dialogEmail = ref(false)
     const dialogPass = ref(false)
 
     const dialogConfirmation = ref(false)
 
+    const tempPseudo = ref('')
     const tempEmail = ref('')
     const tempPass = ref('')
     const tempPassConfirm = ref('')
@@ -39,6 +41,42 @@
 
     const newPasswordConfirmFocus = () => {
       newPasswordConfirm.value?.focus()
+    }
+
+    const savePseudo = async () => {
+      try {
+        errorMessage.value = '';
+        const token = localStorage.getItem('user_token');
+        const newPseudo = (tempPseudo.value || '').trim();
+        
+        if (!newPseudo) {
+          errorMessage.value = "Veuillez entrer un pseudo.";
+          return;
+        }
+
+        await axios.put(`${API_BASE_URL}/auth/update/pseudo`, { newPseudo }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const updatedUser = { ...authStore.user, pseudo: newPseudo };
+        authStore.setUser(updatedUser);
+        
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser) {
+          storedUser.pseudo = newPseudo;
+          localStorage.setItem('user', JSON.stringify(storedUser));
+        }
+
+        tempPseudo.value = '';
+        dialogPseudo.value = false;
+      } catch (error) {
+        console.error(error);
+        if (error.response && error.response.data?.message === 'Pseudo already in use') {
+          errorMessage.value = "Ce pseudo est déjà utilisé.";
+        } else {
+          errorMessage.value = "Une erreur est survenue lors de la mise à jour.";
+        }
+      }
     }
 
     const saveEmail = async () => {
@@ -135,13 +173,14 @@
     }
 
     const closeDialogs = () => {
-      dialogEmail.value = false;
-      dialogPass.value = false;
-      errorMessage.value = '';
-      tempEmail.value = '';
-      tempPass.value = '';
-      tempPassConfirm.value = '';
-      tempOldPass.value = '';
+        dialogPseudo.value = false;
+        dialogEmail.value = false;
+        dialogPass.value = false;
+        errorMessage.value = '';
+        tempEmail.value = '';
+        tempPass.value = '';
+        tempPassConfirm.value = '';
+        tempOldPass.value = '';
     }
 </script>
 
@@ -175,6 +214,15 @@
                   <v-btn
                     block
                     variant="outlined"
+                    prepend-icon="mdi-account-edit"
+                    @click="dialogPseudo = true"
+                    class="mb-3"
+                  >
+                    Changer le pseudo
+                  </v-btn>
+                  <v-btn
+                    block
+                    variant="outlined"
                     prepend-icon="mdi-email-edit"
                     @click="dialogEmail = true"
                     class="mb-3"
@@ -204,6 +252,26 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <v-dialog v-model="dialogPseudo" max-width="400" persistent>
+      <v-card title="Modifier le pseudo" class="pa-4">
+        <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
+          {{ errorMessage }}
+        </v-alert>
+
+        <v-text-field
+          v-model="tempPseudo"
+          label="Nouveau Pseudo"
+          variant="underlined"
+          type="text"
+        ></v-text-field>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="closeDialogs">Annuler</v-btn>
+          <v-btn color="#8C52FF" @click="savePseudo">Valider</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="dialogEmail" max-width="400" persistent>
       <v-card title="Modifier l'email" class="pa-4">
