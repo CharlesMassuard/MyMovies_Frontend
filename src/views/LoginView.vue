@@ -57,6 +57,16 @@ const handleSubmit = async () => {
         return;
     }
 
+    const emailPattern = /.+@.+\..+/;
+    if (!emailPattern.test(mail)) {
+        errorMessage.value = "L'adresse email n'est pas valide.";
+        return;
+    }
+    if (pwd.length < 6) {
+        errorMessage.value = "Le mot de passe doit contenir au moins 6 caractères.";
+        return;
+    }
+
     loading.value = true;
     errorMessage.value = '';
     
