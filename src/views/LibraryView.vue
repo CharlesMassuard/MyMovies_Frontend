@@ -1,6 +1,6 @@
 <script setup>
-    import { ref, computed, onMounted, watch } from 'vue';
-    import { useRoute, useRouter } from 'vue-router';
+    import { ref, onMounted} from 'vue';
+    import {useRouter } from 'vue-router';
     import axios  from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
 
@@ -9,9 +9,11 @@
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const userMovies = ref([]);
+    const loading = ref(true);
 
     const fetchUserMovies = async () => {
         try {
+            loading.value = true;
             const token = localStorage.getItem('user_token');
             if (!token) return;
 
@@ -21,6 +23,8 @@
             userMovies.value = response.data.reverse();
         } catch (error) {
             console.error('Error fetching user library:', error);
+        } finally {
+            loading.value = false;
         }
     };
 
@@ -33,10 +37,10 @@
   <v-container class="py-8">
     <div class="d-flex align-baseline mb-6">
       <h2 class="text-h5 font-weight-bold">Ma Bibliothèque</h2>
-      <span class="text-grey ml-2 text-h6">({{ userMovies.length }})</span>
+      <span class="text-grey ml-2 text-h6" v-if="userMovies.length > 0">({{ userMovies.length }})</span>
     </div>
 
-    <v-row>
+    <v-row v-if="userMovies.length > 0">
       <v-col
         v-for="(userMovie, index) in userMovies"
         :key="index"
@@ -89,6 +93,21 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <v-sheet
+      v-else-if="!loading"
+      class="d-flex flex-column align-center justify-center py-12 bg-transparent text-center"
+      rounded="lg"
+    >
+      <v-icon
+        icon="mdi-movie-open-off-outline"
+        size="100"
+        color="grey-lighten-1"
+        class="mb-4"
+      ></v-icon>
+      <h3 class="text-h5 font-weight-medium text-grey-darken-1">Votre bibliothèque est vide</h3>
+      <p class="text-grey mb-6">Commencez à ajouter des films pour les retrouver ici.</p>
+    </v-sheet>
   </v-container>
 </template>
 
