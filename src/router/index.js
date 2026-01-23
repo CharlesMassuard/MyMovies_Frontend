@@ -44,7 +44,7 @@ const routes = [
       path: '/:pathMatch(.*)*',
       name: 'notFound',
       component: NotFoundView,
-      meta: { public: true, hideHeader: true }
+      meta: { public: true, hideHeader: true, hideFooter: true }
     }
 ]
 
