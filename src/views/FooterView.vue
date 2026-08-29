@@ -22,7 +22,6 @@
           <div class="d-flex flex-wrap justify-center ga-4">
             <v-btn variant="plain" size="x-small" to="/mentions-legales" class="text-none text-grey">Mentions légales</v-btn>
             <v-btn variant="plain" size="x-small" to="/confidentialite" class="text-none text-grey">Confidentialité</v-btn>
-            <v-btn variant="plain" size="x-small" to="/contact" class="text-none text-grey">Contact</v-btn>
           </div>
         </v-col>
 

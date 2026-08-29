@@ -93,6 +93,7 @@
         errorMessage.value = '';
         const token = localStorage.getItem('user_token');
         const newMail = (tempEmail.value || '').trim();
+        const currentPassword = (tempOldPass.value || '').trim();
         
         if (!newMail) {
           errorMessage.value = "Veuillez entrer une adresse email.";
@@ -105,7 +106,7 @@
           return;
         }
 
-        const response = await axios.put(`${API_BASE_URL}/auth/update/mail`, { newMail }, {
+        const response = await axios.put(`${API_BASE_URL}/auth/update/mail`, { newMail, currentPassword }, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -310,6 +311,13 @@
           variant="underlined"
           type="email"
           :rules="emailRules"
+        ></v-text-field>
+        <v-text-field
+          v-model="tempOldPass"
+          label="Mot de passe"
+          type="password"
+          variant="underlined"
+          @keydown.enter.prevent="newPasswordFocus"
         ></v-text-field>
         <v-card-actions>
           <v-spacer></v-spacer>

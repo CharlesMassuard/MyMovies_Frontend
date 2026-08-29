@@ -6,6 +6,8 @@ import MovieDetailsView from '../views/MovieDetailsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import LibraryView from '../views/LibraryView.vue';
 import ProfilView from '../views/ProfilView.vue';
+import LegalNoticeView from '../views/LegalNoticeView.vue';
+import PrivacyPolicyView from '../views/PrivacyPolicyView.vue';
 
 const routes = [
     {
@@ -38,6 +40,18 @@ const routes = [
       name: 'profil',
       component: ProfilView,
       meta: { public: false }
+    },
+    {
+      path: '/mentions-legales',
+      name: 'legalNotice',
+      component: LegalNoticeView,
+      meta: { public: true }
+    },
+    {
+      path: '/confidentialite',
+      name: 'privacyPolicy',
+      component: PrivacyPolicyView,
+      meta: { public: true }
     },
     //404
     {
