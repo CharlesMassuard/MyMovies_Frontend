@@ -100,7 +100,7 @@
 <template>
     <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideHeader">
     <div class="header-section">
-      <img src="../assets/LogoMyMoviesTxt.webp" alt="MyMovies Logo" class="logo" @click="returnMain" />
+      <img src="../assets/logoMyMoviesTxt.webp" alt="MyMovies Logo" class="logo" @click="returnMain" />
     </div>
 
     <div class="search-container">

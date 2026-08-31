@@ -4,7 +4,7 @@
       <v-row align="center" justify="space-between" class="py-8">
         <v-col cols="12" md="3" class="text-center text-md-left mb-6 mb-md-0">
           <img 
-            src="../assets/LogoMyMoviesTxt.webp" 
+            src="../assets/logoMyMoviesTxt.webp" 
             alt="MyMovies Logo" 
             style="max-width: 180px;"
           />
