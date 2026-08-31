@@ -7,7 +7,7 @@
       <p><strong>Nom du site web :</strong> MyMovies</p>
       <p><strong>URL :</strong> mymovies.charlesmassuard.com</p>
       <p><strong>Propriétaire / Éditeur :</strong> Charles MASSUARD</p>
-      <p><strong>Contact :</strong> contact@charlesmassuard.com</p>
+      <p><strong>Contact :</strong> charles@charlesmassuard.com</p>
     </section>
 
     <section class="mb-6">

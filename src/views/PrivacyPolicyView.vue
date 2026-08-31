@@ -60,7 +60,7 @@
         <li><strong>Droit de rectification :</strong> Corriger toute information inexacte.</li>
         <li><strong>Droit à l'effacement :</strong> Demander la suppression totale et définitive de votre compte et de vos listes de films.</li>
       </ul>
-      <p>Pour exercer ces droits, veuillez nous contacter à contact@charlesmassuard.com.</p>
+      <p>Pour exercer ces droits, veuillez nous contacter à charles@charlesmassuard.com.</p>
     </section>
 
   </v-container>
