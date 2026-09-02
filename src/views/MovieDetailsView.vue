@@ -1,14 +1,15 @@
 <script setup>
   import { ref, computed, onMounted, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import axios  from 'axios';
+  import axios from 'axios';
   import ConfirmationDialog from '../components/ConfirmationDialog.vue';
+  import noPoster from '../assets/noPosterAvailable.webp';
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const router = useRouter();
-
   const route = useRoute();
+  
   const movieId = computed(() => route.params.id);
   const movieDetails = ref({});
   const movieCredits = ref({});
@@ -23,25 +24,22 @@
 
   const userRating = ref(0);
   const userComment = ref("");
-
   const editRating = ref(0);
   const editComment = ref("");
 
   const statusFilm = ref("");
+  const statusUserMovie = ref("UNDEFINED");
+  const textVuAvecDate = ref("Vu");
 
   const changeDateViewed = () => {
     dialogDate.value = true;
   };
 
-  const statusUserMovie = ref("UNDEFINED");
-
-  const textVuAvecDate = ref("Vu")
-
   const textButtonStatus = computed(() => ({
     "WATCHED": { text: textVuAvecDate.value, icon: "mdi-check-all" },
-    "WATCHING": { text: "En cours", icon: "mdi-play-circle-outline" },
+    "WATCHING": { text: "En cours de visionnage", icon: "mdi-play-circle-outline" },
     "TO_WATCH": { text: "À voir", icon: "mdi-clock-outline" },
-    "UNDEFINED": { text: "Ajouter à ma liste de lecture", icon: "mdi-plus" }
+    "UNDEFINED": { text: "Ajouter à ma liste", icon: "mdi-plus" }
   }));
 
   const allActions = [
@@ -67,6 +65,21 @@
         return [];
     }
   });
+
+  const formatCurrency = (value) => {
+    if (!value || value === 0) return null;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  };
+
+  const handleAuthError = (error) => {
+    if (error.response && error.response.status === 403) {
+      localStorage.removeItem('user_token');
+      authMessage.value = "Votre session a expiré. Veuillez vous reconnecter.";
+      dialogAuth.value = true;
+      return true;
+    }
+    return false;
+  };
   
   const fetchDetailsMovies = async () => {
     try {
@@ -77,7 +90,8 @@
 
       if (movieDetails.value.release_date) {
         const [year, month, day] = movieDetails.value.release_date.split('-');
-        movieDetails.value.release_date = `${day}/${month}/${year}`;
+        movieDetails.value.release_date_formatted = `${day}/${month}/${year}`;
+        movieDetails.value.release_year = year;
       }
 
       const creditsResponse = await axios.get(`${API_BASE_URL}/movies/${movieId.value}/credits`);
@@ -85,10 +99,12 @@
       directors.value = movieCredits.value.crew.filter(member => member.job === 'Director');  
 
       const runtimeMinutes = movieDetails.value.runtime;
-      if (typeof runtimeMinutes === 'number') {
+      if (typeof runtimeMinutes === 'number' && runtimeMinutes > 0) {
         const hours = Math.floor(runtimeMinutes / 60);
         const minutes = runtimeMinutes % 60;
         movieDetails.value.runtimeFormatted = `${hours}h ${minutes.toString().padStart(2, '0')}min`;
+      } else {
+        movieDetails.value.runtimeFormatted = "Durée inconnue";
       }
     } catch (error) {
       console.error('Error fetching movie details:', error);
@@ -115,6 +131,7 @@
         textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
       }
     } catch (error) {
+      handleAuthError(error);
       console.error('Error fetching status:', error);
     }
   };
@@ -124,20 +141,22 @@
       const token = localStorage.getItem('user_token');
       if (!token) return;
 
-      const response = await axios.get(`${API_BASE_URL}/user/movies/rating/${movieId.value}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const [resRating, resComment] = await Promise.all([
+        axios.get(`${API_BASE_URL}/user/movies/rating/${movieId.value}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_BASE_URL}/user/movies/comment/${movieId.value}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
 
-      const responseComment = await axios.get(`${API_BASE_URL}/user/movies/comment/${movieId.value}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      userComment.value = responseComment.data || "";
-      if(userComment.value === "UNDEFINED" || userComment.value === null || userComment.value === "NO_COMMENT") {
+      userComment.value = resComment.data || "";
+      if(['UNDEFINED', null, 'NO_COMMENT'].includes(userComment.value)) {
         userComment.value = "";
       }
-      userRating.value = response.data || 0;
+      userRating.value = resRating.data || 0;
     } catch (error) {
+      handleAuthError(error);
       console.error('Error fetching rating:', error);
       userRating.value = 0;
       userComment.value = "";
@@ -148,9 +167,17 @@
     return userRating.value > 0 ? `${userRating.value}/10` : 'Noter';
   });
 
+  const checkAuth = (message) => {
+    if (!localStorage.getItem('user_token')) {
+      authMessage.value = message;
+      dialogAuth.value = true;
+      return false;
+    }
+    return true;
+  };
+
   const handleMainButtonClick = () => {
     if (!checkAuth("Connectez-vous pour ajouter ce film à votre liste.")) return;
-
     if (statusUserMovie.value === "UNDEFINED") {
       addFilmToWatchlist(movieId.value);
     }
@@ -164,9 +191,7 @@
       });
       statusUserMovie.value = "TO_WATCH";
     } catch (error) {
-      if (error.response && error.response.status === 403) {
-        dialogAuth.value = true;
-      }
+      handleAuthError(error);
       console.error('Erreur lors de l\'ajout :', error);
     }
   };
@@ -178,7 +203,6 @@
       dialogConfirmation.value = true;
       return;
     }
-
     if(newStatus === 'DATE') {
       changeDateViewed();
       return;
@@ -192,6 +216,7 @@
       );
       statusUserMovie.value = newStatus;
     } catch (error) {
+      handleAuthError(error);
       console.error('Erreur lors de la mise à jour du statut :', error);
     }
   };
@@ -207,6 +232,7 @@
       userComment.value = "";
       userRating.value = 0;
     } catch (error) {
+      handleAuthError(error);
       console.error('Erreur lors de la suppression :', error);
     }
   };
@@ -221,18 +247,15 @@
       const formattedDate = `${year}-${month}-${day}`; 
       
       await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, 
-        { 
-          status: "WATCHED",
-          watchedAt: formattedDate 
-        }, 
+        { status: "WATCHED", watchedAt: formattedDate }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
       statusUserMovie.value = "WATCHED";
-      
       dialogDate.value = false;
     } catch (error) {
+      handleAuthError(error);
       console.error('Erreur lors du changement de date :', error);
     }
   };
@@ -240,9 +263,7 @@
   const saveRating = async () => {
     if (!checkAuth("Connectez-vous pour noter ce film.")) return;
     try {
-      if(editRating.value < 1 || editRating.value > 10) {
-        return;
-      }
+      if(editRating.value < 1 || editRating.value > 10) return;
       if(editComment.value.length > 500) {
         alert('Le commentaire ne doit pas dépasser 500 caractères.');
         return;
@@ -252,32 +273,26 @@
       userComment.value = editComment.value;
       const token = localStorage.getItem('user_token');
       await axios.put(`${API_BASE_URL}/user/movies/rate/${movieId.value}`, 
-        { 
-          rating: userRating.value,
-          comment: userComment.value
-        }, 
+        { rating: userRating.value, comment: userComment.value }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchStatusUserMovie();
     } catch (error) {
+      handleAuthError(error);
       console.error('Erreur lors de la sauvegarde de la note :', error);
     }
-    dialogNote.value = false; //fermeture du dialog
-  };
-
-  const checkAuth = (message) => {
-    if (!localStorage.getItem('user_token')) {
-      authMessage.value = message;
-      dialogAuth.value = true;
-      return false;
-    }
-    return true;
+    dialogNote.value = false;
   };
 
   const openDialogNote = () => {
     if (!checkAuth("Connectez-vous pour noter ce film.")) return;
     dialogNote.value = true;
-  }
+  };
+
+  const allGenres = computed(() => {
+    const genres = movieDetails.value.genres;
+    return Array.isArray(genres) ? genres.map(g => g.name).join(', ') : '';
+  });
 
   onMounted(() => {
     fetchDetailsMovies();
@@ -287,11 +302,7 @@
 
   watch(dialogNote, (isOpen) => {
     if (isOpen) {
-      if(userRating.value === 0 || userRating.value === -1) {
-        editRating.value = 5;
-      } else {
-        editRating.value = userRating.value;
-      }
+      editRating.value = (userRating.value <= 0) ? 5 : userRating.value;
       editComment.value = userComment.value;
     }
   });
@@ -300,18 +311,12 @@
     movieDetails.value = {};
     movieCredits.value = {};
     statusUserMovie.value = "UNDEFINED";
-    // On réinitialise la note et le commentaire pour le nouveau film
     userRating.value = 0;
     userComment.value = "";
     
     fetchDetailsMovies();
     fetchStatusUserMovie();
-    fetchRating(); // Ne pas oublier de le relancer ici aussi
-  });
-
-  const allGenres = computed(() => {
-    const genres = movieDetails.value.genres;
-    return Array.isArray(genres) ? genres.map(g => g.name).join(', ') : '';
+    fetchRating();
   });
 </script>
 
@@ -327,7 +332,7 @@
         <v-row align="center">
           <v-col cols="12" md="3" class="d-flex justify-center">
             <v-img
-              :src="`https://image.tmdb.org/t/p/w500${movieDetails.poster_path}`"
+              :src="movieDetails.poster_path ? `https://image.tmdb.org/t/p/w500${movieDetails.poster_path}` : noPoster"
               :alt="movieDetails.title"
               class="poster-img elevation-10"
               cover
@@ -336,17 +341,57 @@
 
           <v-col cols="12" md="9" class="text-white px-md-10">
             <div class="movie-header">
+              <!-- Badges de statut et type -->
+              <div class="d-flex align-center flex-wrap ga-2 mb-2">
+                <v-chip color="grey-darken-3" variant="flat" size="small" class="text-white font-weight-bold">
+                  <v-icon start size="small" color="white">mdi-movie-open</v-icon>
+                  Film
+                </v-chip>
+                <v-chip v-if="statusFilm === 'Released'" color="success" variant="flat" size="small" class="font-weight-bold">
+                  Sorti
+                </v-chip>
+                <v-chip v-else-if="statusFilm" color="#8C52FF" variant="flat" size="small" class="font-weight-bold">
+                  À venir
+                </v-chip>
+              </div>
+
               <h1 class="text-h3 font-weight-bold">{{ movieDetails.title }}</h1>
+              
               <p class="subtitle-info d-flex align-center flex-wrap mt-2">
-                <span v-if="statusFilm === 'Released'">{{ movieDetails.release_date }}</span>
-                <span v-else>{{ movieDetails.release_date }} (Non sorti)</span>
+                <span>{{ movieDetails.release_year || 'Date inconnue' }}</span>
+                <span class="mx-2">•</span>
+                <span>{{ movieDetails.release_date_formatted }}</span>
                 <span class="mx-2">•</span>
                 <span>{{ allGenres }}</span>
                 <span class="mx-2">•</span>
                 <span>{{ movieDetails.runtimeFormatted }}</span>
               </p>
+
+              <!-- Informations Box-Office & Bouton site web -->
+              <div class="d-flex align-center flex-wrap mt-3 ga-4">
+                <div v-if="movieDetails.budget || movieDetails.revenue" class="d-flex align-center flex-wrap ga-3 text-caption text-grey-lighten-2">
+                  <span v-if="movieDetails.budget">Budget : <strong class="text-white">{{ formatCurrency(movieDetails.budget) }}</strong></span>
+                  <span v-if="movieDetails.budget && movieDetails.revenue">|</span>
+                  <span v-if="movieDetails.revenue">Revenus : <strong class="text-white">{{ formatCurrency(movieDetails.revenue) }}</strong></span>
+                </div>
+                
+                <v-btn 
+                  v-if="movieDetails.homepage"
+                  :href="movieDetails.homepage"
+                  target="_blank"
+                  variant="outlined"
+                  size="small"
+                  color="white"
+                  prepend-icon="mdi-open-in-new"
+                  rounded="xl"
+                  class="ml-md-auto"
+                >
+                  Site officiel
+                </v-btn>
+              </div>
             </div>
 
+            <!-- Score TMDB -->
             <div class="score-section my-6 d-flex align-center">
               <v-progress-circular
                 :model-value="movieDetails.vote_average * 10"
@@ -360,7 +405,8 @@
               <span class="ml-3 font-weight-bold leading-tight">Score d'évaluation<br>TMDB</span>
             </div>
 
-            <div class="actions-row mb-8 d-flex align-center">
+            <!-- Actions Utilisateur -->
+            <div class="actions-row mb-8 d-flex flex-wrap align-center ga-3">
               <v-menu 
                 :close-on-content-click="true" 
                 location="bottom center"
@@ -373,12 +419,12 @@
                         color="#8C52FF" 
                         variant="flat"
                         v-bind="props"
-                        :icon="$vuetify.display.smAndDown"
-                        width="350"
+                        class="action-btn flex-grow-1 flex-md-grow-0"
+                        min-width="250"
                         @click="handleMainButtonClick"
                     >
-                        <v-icon :start="!$vuetify.display.smAndDown">{{ textButtonStatus[statusUserMovie].icon }}</v-icon>
-                        <span v-if="!$vuetify.display.smAndDown">{{ textButtonStatus[statusUserMovie].text }}</span>
+                        <v-icon start>{{ textButtonStatus[statusUserMovie].icon }}</v-icon>
+                        <span class="font-weight-bold">{{ textButtonStatus[statusUserMovie].text }}</span>
                     </v-btn>
                 </template>
 
@@ -404,26 +450,24 @@
                 rounded="xl" 
                 color="white" 
                 variant="flat"
-                :icon="$vuetify.display.smAndDown"
-                class="ml-5"
+                class="action-btn px-6"
                 @click="openDialogNote()"
                 v-if="statusFilm === 'Released'"
               >
-                <v-icon :start="!$vuetify.display.smAndDown">mdi-star</v-icon>
-                <span>{{ displayRating }}</span>
+                <v-icon start color="amber">mdi-star</v-icon>
+                <span class="text-black font-weight-bold">{{ displayRating }}</span>
               </v-btn>
             </div>
 
+            <!-- Synopsis & Équipe -->
             <div class="synopsis-section">
               <p v-if="movieDetails.tagline" class="tagline mb-4 text-grey-lighten-1 italic"><i>{{ movieDetails.tagline}}</i></p>
               <h3 v-if="movieDetails.overview" class="text-h6 font-weight-bold mb-2">Synopsis</h3>
               <p v-if="movieDetails.overview" class="overview-text">{{ movieDetails.overview }}</p>
               
-              <div v-if="directors.length > 0" class="director-info mt-8">
+              <div v-if="directors.length > 0" class="director-info mt-6">
                 <h3 class="text-h6 font-weight-bold mb-2">{{ directors.length === 1 ? 'Réalisateur' : 'Réalisateurs' }}</h3>
-                <div v-for="director in directors" :key="director.id">
-                  <p class="text-body-2">{{ director.name }}</p>
-                </div>
+                <p class="text-body-2">{{ directors.map(d => d.name).join(', ') }}</p>
               </div>
             </div>
           </v-col>
@@ -431,13 +475,14 @@
       </v-container>
     </div>
 
-    <v-container class="mt-10">
+    <!-- Têtes d'affiche -->
+    <v-container class="mt-10 mb-10" v-if="movieCredits.cast?.length">
       <h3 class="text-h5 font-weight-bold mb-6">Têtes d'affiche</h3>
       <v-row class="flex-nowrap overflow-x-auto pb-4">
         <v-col v-for="actor in movieCredits.cast" :key="actor.id" cols="6" sm="4" md="2" class="flex-shrink-0">
-          <v-card class="rounded-lg overflow-hidden elevation-2" height="100%">
+          <v-card class="rounded-lg overflow-hidden elevation-2 h-100">
             <v-img 
-              :src="`https://image.tmdb.org/t/p/w200${actor.profile_path}`" 
+              :src="actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : noPoster" 
               height="200" 
               cover
               class="bg-grey-lighten-2"
@@ -543,6 +588,7 @@
       </v-btn>
     </v-card>
   </v-dialog>
+  
   <v-dialog v-model="dialogAuth" width="400">
     <v-card class="rounded-xl pa-4">
       <div class="text-center">
@@ -647,26 +693,23 @@
   scrollbar-color: #dbdbdb transparent;
 }
 
-.period-select :deep(.v-field__outline) {
-  --v-field-border-opacity: 0.1;
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .comment-area :deep(.v-field__outline) {
   --v-field-border-opacity: 0.1;
 }
 
-.rating-box {
-  width: 42px !important;
-  height: 42px !important;
-  border-radius: 12px !important;
-  border: 1px solid #e0e0e0 !important;
-  background-color: white !important;
-  transition: all 0.2s ease;
-}
-
 .selected-rating {
   background-color: #8C52FF !important;
   border-color: #8C52FF !important;
+}
+
+.action-btn {
+  height: 44px !important;
 }
 
 @media (max-width: 960px) {
