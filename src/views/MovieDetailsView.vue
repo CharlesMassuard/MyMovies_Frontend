@@ -120,19 +120,43 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       statusUserMovie.value = response.data;
+      
       if(statusUserMovie.value === "WATCHED") {
         const watchedResponse = await axios.get(`${API_BASE_URL}/user/movies/watched-date/${movieId.value}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const watchedDate = new Date(watchedResponse.data);
-        const day = String(watchedDate.getDate()).padStart(2, '0');
-        const month = String(watchedDate.getMonth() + 1).padStart(2, '0');
-        const year = watchedDate.getFullYear();
-        textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
+        
+        //On vérifie que la date existe ET que ce n'est pas notre date fictive
+        if (watchedResponse.data && !String(watchedResponse.data).startsWith("1970-01-01")) {
+          const watchedDate = new Date(watchedResponse.data);
+          const day = String(watchedDate.getDate()).padStart(2, '0');
+          const month = String(watchedDate.getMonth() + 1).padStart(2, '0');
+          const year = watchedDate.getFullYear();
+          textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
+        } else {
+          textVuAvecDate.value = "Vu il y a longtemps";
+        }
       }
     } catch (error) {
       handleAuthError(error);
       console.error('Error fetching status:', error);
+    }
+  };
+
+  const setLongTimeAgo = async () => {
+    try {
+      const token = localStorage.getItem('user_token');
+      await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, 
+        { status: "WATCHED", watchedAt: "1970-01-01" }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      textVuAvecDate.value = "Vu il y a longtemps";
+      statusUserMovie.value = "WATCHED";
+      dialogDate.value = false;
+    } catch (error) {
+      handleAuthError(error);
+      console.error('Erreur lors du changement de date :', error);
     }
   };
 
@@ -506,16 +530,57 @@
     @confirm="confirmDelete"
   ></ConfirmationDialog>
 
-  <v-dialog v-model="dialogDate" width="auto">
-    <v-card title="Quand avez-vous vu ce film ?">
-      <v-card-text class="pa-0">
-        <v-date-picker v-model="selectedDate" color="#8C52FF" hide-header show-adjacent-months control-variant="modal" :max="new Date()"></v-date-picker>
+  <v-dialog v-model="dialogDate" max-width="420">
+    <v-card rounded="xl" class="elevation-10">
+      <v-card-title class="font-weight-bold pt-6 px-6 pb-2 text-h6">
+        Quand avez-vous vu ce film ?
+      </v-card-title>
+      
+      <v-card-text class="pa-0 d-flex justify-center">
+        <!--Ajout de w-100 pour que le calendrier prenne bien l'espace-->
+        <v-date-picker 
+          v-model="selectedDate" 
+          color="#8C52FF" 
+          hide-header 
+          show-adjacent-months 
+          control-variant="modal" 
+          :max="new Date()"
+          class="w-100"
+        ></v-date-picker>
       </v-card-text>
+      
       <v-divider></v-divider>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn text="Annuler" variant="text" @click="dialogDate = false"></v-btn>
-        <v-btn color="#8C52FF" variant="flat" text="Confirmer" @click="confirmDateChange"></v-btn>
+      
+      <!--Utilisation de d-flex, flex-wrap et gap (ga-2) pour éviter l'écrasement sur mobile-->
+      <v-card-actions class="d-flex flex-wrap justify-space-between px-4 py-3 ga-2">
+        <!--text-none retire les majuscules automatiques-->
+        <v-btn 
+          color="grey-darken-1" 
+          variant="text" 
+          class="text-none font-weight-medium" 
+          @click="setLongTimeAgo"
+        >
+          Vu il y a longtemps
+        </v-btn>
+        
+        <div class="d-flex ga-2 ml-auto">
+          <v-btn 
+            variant="text" 
+            class="text-none font-weight-medium" 
+            @click="dialogDate = false"
+          >
+            Annuler
+          </v-btn>
+          
+          <v-btn 
+            color="#8C52FF" 
+            variant="flat" 
+            class="text-none font-weight-bold px-4" 
+            @click="confirmDateChange"
+          >
+            Confirmer
+          </v-btn>
+        </div>
       </v-card-actions>
     </v-card>
   </v-dialog>
