@@ -8,6 +8,7 @@ import LibraryView from '../views/LibraryView.vue';
 import ProfilView from '../views/ProfilView.vue';
 import LegalNoticeView from '../views/LegalNoticeView.vue';
 import PrivacyPolicyView from '../views/PrivacyPolicyView.vue';
+import SerieDetailsView from '../views/SerieDetailsView.vue';
 
 const routes = [
     {
@@ -28,6 +29,12 @@ const routes = [
         name: 'movieDetails',
         component: MovieDetailsView,
         meta: { public: true }
+    },
+    {
+      path: '/serie/:id',
+      name: 'serieDetails',
+      component: SerieDetailsView,
+      meta: { public: true }
     },
     {
       path: '/library',

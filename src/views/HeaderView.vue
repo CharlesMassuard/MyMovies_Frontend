@@ -16,8 +16,7 @@
     const loadingSuggestions = ref(false);
     let debounceTimer = null;
 
-    const isSelecting = ref(false)
-
+    const isSelecting = ref(false);
     const dialogConfirmation = ref(false);
 
     const profilItems = [
@@ -51,10 +50,36 @@
 
         loadingSuggestions.value = true;
         try {
-            const response = await axios.get(`${apiPath}/movies/search`, {
-                params: { query: query }
-            });
-            suggestions.value = response.data.results.slice(0, 15);
+            const [resMovies, resSeries] = await Promise.all([
+                axios.get(`${apiPath}/movies/search`, { params: { query } }),
+                axios.get(`${apiPath}/series/search`, { params: { query } })
+            ]);
+
+            //normalisation des films
+            const movies = (resMovies.data.results || []).map(item => ({
+                id: item.id,
+                title: item.title,
+                year: item.release_date ? item.release_date.split('-')[0] : 'N/A',
+                poster_path: item.poster_path,
+                media_type: 'movie',
+                popularity: item.popularity || 0
+            }));
+
+            //normalisation des séries
+            const series = (resSeries.data.results || []).map(item => ({
+                id: item.id,
+                title: item.name,
+                year: item.first_air_date ? item.first_air_date.split('-')[0] : 'N/A',
+                poster_path: item.poster_path,
+                media_type: 'serie',
+                popularity: item.popularity || 0
+            }));
+
+            //fusion, tri par popularité et limitation à 15 résultats
+            suggestions.value = [...movies, ...series]
+                .sort((a, b) => b.popularity - a.popularity)
+                .slice(0, 15);
+
             showDropdown.value = suggestions.value.length > 0;
         } catch (error) {
             console.error('Erreur suggestions:', error);
@@ -64,32 +89,33 @@
     };
 
     watch(searchQuery, (newVal) => {
-        if (isSelecting.value) return
+        if (isSelecting.value) return;
         
-        clearTimeout(debounceTimer)
+        clearTimeout(debounceTimer);
         if (!newVal) {
-            suggestions.value = []
-            showDropdown.value = false
-            return
+            suggestions.value = [];
+            showDropdown.value = false;
+            return;
         }
         debounceTimer = setTimeout(() => {
-            fetchSuggestions(newVal)
-        }, 300)
+            fetchSuggestions(newVal);
+        }, 300);
     });
 
-    const selectSuggestion = (movie) => {
-        isSelecting.value = true
-        searchQuery.value = movie.title
-        showDropdown.value = false
-        accessFilm(movie.id)
+    const selectSuggestion = (item) => {
+        isSelecting.value = true;
+        searchQuery.value = item.title;
+        showDropdown.value = false;
+        
+        if (item.media_type === 'serie') {
+            router.push({ path: `/serie/${item.id}` });
+        } else {
+            router.push({ path: `/movie/${item.id}` });
+        }
         
         setTimeout(() => {
-            isSelecting.value = false
-        }, 500)
-    };
-
-    const accessFilm = (movieId) => {
-        router.push({ path: `/movie/${movieId}` });
+            isSelecting.value = false;
+        }, 500);
     };
 
     const returnMain = () => {
@@ -98,7 +124,7 @@
 </script>
 
 <template>
-    <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideHeader">
+  <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideHeader">
     <div class="header-section">
       <img src="../assets/logoMyMoviesTxt.webp" alt="MyMovies Logo" class="logo" @click="returnMain" />
     </div>
@@ -111,7 +137,7 @@
               clearable 
               label="Rechercher" 
               density="compact"
-              placeholder="Inception, Interstellar, Zootopie, ..."
+              placeholder="Inception, Stranger Things, Interstellar, ..."
               variant="outlined" 
               rounded="xl" 
               class="search-bar custom-append"
@@ -129,23 +155,33 @@
 
         <v-list v-if="suggestions.length > 0" class="dropdown-list" elevation="10" rounded="lg">
           <v-list-item 
-            v-for="movie in suggestions" 
-            :key="movie.id" 
-            @click="selectSuggestion(movie)"
+            v-for="item in suggestions" 
+            :key="`${item.media_type}-${item.id}`" 
+            @click="selectSuggestion(item)"
             class="py-2"
           >
             <template v-slot:prepend>
               <div class="poster-container">
                 <v-img 
-                  :src="movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : noPoster"
+                  :src="item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : noPoster"
                   aspect-ratio="2/3"
                   cover
                   class="poster-img"
                 ></v-img>
               </div>
             </template>
-            <v-list-item-title class="font-weight-bold">{{ movie.title }}</v-list-item-title>
-            <v-list-item-subtitle>{{ movie.release_date?.split('-')[0] }}</v-list-item-subtitle>
+            <v-list-item-title class="font-weight-bold">{{ item.title }}</v-list-item-title>
+            <v-list-item-subtitle class="d-flex align-center gap-1 mt-1">
+              <v-chip 
+                size="x-small" 
+                variant="flat"
+                :color="item.media_type === 'serie' ? '#8C52FE' : '#4287f5'" 
+                class="text-white mr-2"
+              >
+                {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+              </v-chip>
+              <span>{{ item.year }}</span>
+            </v-list-item-subtitle>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -241,11 +277,6 @@
     .dropdown-list::-webkit-scrollbar-thumb {
         background: #4f4f4f;
         border-radius: 10px;
-    }
-
-    .suggestion-item:hover {
-        background-color: #f8f5ff;
-        cursor: pointer;
     }
 
     .poster-container {
