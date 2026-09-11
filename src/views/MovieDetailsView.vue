@@ -227,18 +227,33 @@
       dialogConfirmation.value = true;
       return;
     }
-    if(newStatus === 'DATE') {
+    if (newStatus === 'DATE') {
       changeDateViewed();
       return;
     }
     
     try {
       const token = localStorage.getItem('user_token');
+      let payload = { status: newStatus };
+
+      // 1. Assigner la date du jour si le statut passe à "Vu"
+      if (newStatus === 'WATCHED') {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        
+        payload.watchedAt = `${year}-${month}-${day}`;
+        textVuAvecDate.value = `Vu le ${day}/${month}/${year}`;
+      }
+
       await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, 
-        { status: newStatus }, 
+        payload, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       statusUserMovie.value = newStatus;
+
     } catch (error) {
       handleAuthError(error);
       console.error('Erreur lors de la mise à jour du statut :', error);
