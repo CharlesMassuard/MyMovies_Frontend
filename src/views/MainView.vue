@@ -5,7 +5,7 @@
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
-    // Filtre principal ('all' par défaut)
+    //Filtre principal
     const mediaType = ref('all');
 
     const dayTrendingMovies = ref([]);
@@ -33,7 +33,7 @@
     const currentDay = String(date.getDate()).padStart(2, '0');
     const currentDateString = `${currentYear}-${currentMonth}-${currentDay}`;
 
-    // Fusion et tri dynamique selon le filtre
+    //Fusion et tri dynamique selon le filtre
     const currentTrending = computed(() => {
         if (mediaType.value === 'movie') return dayTrendingMovies.value;
         if (mediaType.value === 'serie') return dayTrendingSeries.value;
@@ -50,7 +50,7 @@
         return inTheaterMovies.value.filter(movie => movie.release_date <= currentDateString);
     });
 
-    // Ajout d'un tag 'media_type' pour savoir où rediriger lors du clic
+    //Ajout d'un tag media_type
     const fetchMovies = async () => {
         try {
             const [trendingRes, popularRes, inTheaterRes] = await Promise.all([
@@ -79,7 +79,7 @@
         }
     };
 
-    // Remise à zéro du scroll au changement de filtre
+    //Remise à zéro du scroll
     watch(mediaType, () => {
         setTimeout(() => {
             const sliders = [sliderTrending.value, sliderPopular.value, sliderInTheater.value];
@@ -117,7 +117,6 @@
       </v-btn-toggle>
     </div>
 
-    <!-- Section: Tendances du jour -->
     <div class="pt-4 pb-8">
       <div class="d-flex align-center justify-space-between section-header">
         <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
@@ -144,14 +143,15 @@
                   cover
                   aspect-ratio="2/3"
                   class="movie-img"
-                >
-                  <!-- Badge visible uniquement dans Général -->
-                  <div v-if="mediaType === 'all'" class="d-flex justify-end pa-1">
-                    <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
-                    </v-chip>
-                  </div>
-                </v-img>
+                ></v-img>
+                
+                <!--Badge sorti de l'image pour éviter le zoom-->
+                <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                  <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                    {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                  </v-chip>
+                </div>
+
               </v-card>
             </div>
             <span class="ranking-number">{{ index + 1 }}</span>
@@ -160,7 +160,6 @@
       </v-slide-group>
     </div>
 
-    <!-- Section: Populaires -->
     <div class="pb-8">
       <div class="d-flex align-center justify-space-between section-header">
         <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
@@ -187,13 +186,15 @@
                   cover
                   aspect-ratio="2/3"
                   class="movie-img"
-                >
-                  <div v-if="mediaType === 'all'" class="d-flex justify-end pa-1">
-                    <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
-                    </v-chip>
-                  </div>
-                </v-img>
+                ></v-img>
+
+                <!--Badge sorti de l'image pour éviter le zoom-->
+                <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                  <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                    {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                  </v-chip>
+                </div>
+
               </v-card>
             </div>
             <span class="ranking-number">{{ index + 1 }}</span>
@@ -202,7 +203,6 @@
       </v-slide-group>
     </div>
 
-    <!-- Section: En Salles (Général et Films uniquement) -->
     <div v-if="mediaType === 'movie' || mediaType === 'all'" class="pb-8">
       <div class="d-flex align-center justify-space-between section-header">
         <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
@@ -229,13 +229,15 @@
                   cover
                   aspect-ratio="2/3"
                   class="movie-img"
-                >
-                  <div v-if="mediaType === 'all'" class="d-flex justify-end pa-1">
-                    <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">
-                      Film
-                    </v-chip>
-                  </div>
-                </v-img>
+                ></v-img>
+
+                <!--Badge sorti de l'image pour éviter le zoom-->
+                <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                  <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">
+                    Film
+                  </v-chip>
+                </div>
+
               </v-card>
             </div>
             <span class="ranking-number">{{ index + 1 }}</span>
@@ -301,7 +303,9 @@
     .movie-card {
         cursor: pointer;
         background: transparent;
+        position: relative;
     }
+
     .movie-img {
         transition: transform 0.3s ease;
         width: 150px;
@@ -310,6 +314,15 @@
 
     .movie-card:hover .movie-img {
         transform: scale(1.1);
+    }
+
+    /*Positionnement fixe par dessus l'image*/
+    .badge-container {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 10;
+        pointer-events: none;
     }
 
     .ranking-number {
