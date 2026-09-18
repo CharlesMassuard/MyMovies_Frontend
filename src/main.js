@@ -13,6 +13,9 @@ app.use(pinia)
 app.use(router)
 app.use(vuetify)
 
+//Création d'une instance Axios vierge sans intercepteurs
+const axiosRefresh = axios.create()
+
 axios.interceptors.request.use((config) => {
     const authStore = useAuthStore()
     if (authStore.token) {
@@ -47,7 +50,7 @@ axios.interceptors.response.use(
                 return new Promise(function(resolve, reject) {
                     failedQueue.push({ resolve, reject })
                 }).then(token => {
-                    originalRequest.headers['Authorization'] = 'Bearer ' + token
+                    originalRequest.headers['Authorization'] = `Bearer ${token}`
                     return axios(originalRequest)
                 }).catch(err => Promise.reject(err))
             }
@@ -57,7 +60,8 @@ axios.interceptors.response.use(
 
             try {
                 const apiPath = import.meta.env.VITE_API_BASE_URL
-                const response = await axios.post(`${apiPath}/auth/refresh`, {
+                //Utilisation de l'instance vierge pour ne pas envoyer le token expiré
+                const response = await axiosRefresh.post(`${apiPath}/auth/refresh`, {
                     refreshToken: authStore.refreshToken
                 })
 
@@ -70,7 +74,7 @@ axios.interceptors.response.use(
                 localStorage.setItem('user_token', newToken)
                 localStorage.setItem('user_refresh_token', newRefreshToken)
 
-                originalRequest.headers['Authorization'] = 'Bearer ' + newToken
+                originalRequest.headers['Authorization'] = `Bearer ${newToken}`
                 processQueue(null, newToken)
                 
                 return axios(originalRequest)
