@@ -29,12 +29,16 @@
 
           let combinedLibrary = [...movies, ...series];
 
-          // Tri par date de dernière modification (du plus récent au plus ancien)
-          // Remplace 'updatedAt' par le vrai nom du champ renvoyé par ton backend si différent
+          //Fonction-pour-récupérer-la-date-la-plus-récente-entre-l'ajout-et-le-visionnage
+          const getMostRecentDate = (item) => {
+              const added = item.dateAdded ? new Date(item.dateAdded).getTime() : 0;
+              const viewed = item.dateViewed ? new Date(item.dateViewed).getTime() : 0;
+              return Math.max(added, viewed);
+          };
+
+          //Tri-par-date-d'activité-la-plus-récente-(du-plus-récent-au-plus-ancien)
           combinedLibrary.sort((a, b) => {
-              const dateA = new Date(a.updatedAt || 0); // fallback à 0 si la date est absente
-              const dateB = new Date(b.updatedAt || 0);
-              return dateB - dateA; // Tri décroissant
+              return getMostRecentDate(b) - getMostRecentDate(a); //Tri-décroissant
           });
 
           userLibrary.value = combinedLibrary;
@@ -94,14 +98,14 @@
         density="compact"
         class="bg-white w-100 w-md-auto d-flex"
       >
-        <!--Boutons étendus pour remplir l'écran sur mobile avec flex-grow-1-->
+        <!--Boutons-étendus-pour-remplir-l'écran-sur-mobile-->
         <v-btn value="all" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">Général</v-btn>
         <v-btn value="movie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">Films</v-btn>
         <v-btn value="serie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">Séries</v-btn>
       </v-btn-toggle>
     </div>
 
-    <!-- Filtres secondaires : Statuts -->
+    <!--Filtres-secondaires-:-Statuts-->
     <div class="mb-6 px-4" v-if="userLibrary.length > 0">
       <v-chip-group
         v-model="currentStatus"
@@ -122,7 +126,7 @@
       </v-chip-group>
     </div>
 
-    <!-- Grille de la bibliothèque -->
+    <!--Grille-de-la-bibliothèque-->
     <v-row v-if="filteredLibrary.length > 0">
       <v-col
         v-for="item in filteredLibrary"
@@ -145,14 +149,14 @@
                 class="movie-img"
               ></v-img>
 
-              <!-- Badge Supérieur : Type de média -->
+              <!--Badge-Supérieur-->
               <div v-if="currentType === 'all'" class="badge-container-top pa-1">
                 <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
                   {{ item.type === 'serie' ? 'Série' : 'Film' }}
                 </v-chip>
               </div>
 
-              <!-- Badge Inférieur : Statut / Note -->
+              <!--Badge-Inférieur-->
               <div class="badge-container-bottom pa-1">
                 <v-chip v-if="item.status === 'WATCHED'" size="x-small" color="amber-darken-4" variant="flat" class="text-white font-weight-bold shadow-badge">
                   <v-icon start icon="mdi-star" size="12"></v-icon>
@@ -172,7 +176,7 @@
       </v-col>
     </v-row>
 
-    <!-- État vide -->
+    <!--État-vide-->
     <v-sheet
       v-else-if="!loading"
       class="d-flex flex-column align-center justify-center py-12 bg-transparent text-center mt-8"
@@ -215,7 +219,6 @@
         border-color: #8C52FF !important;
     }
 
-    /* Styles repris de la MainView */
     .card-container {
         position: relative;
         width: 100%;
@@ -247,7 +250,6 @@
         transform: scale(1.1);
     }
 
-    /* Badges isolés du zoom */
     .badge-container-top {
         position: absolute;
         top: 0;

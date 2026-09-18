@@ -5,7 +5,7 @@
 
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
-    //Filtre principal
+    // Filtre principal
     const mediaType = ref('all');
 
     const dayTrendingMovies = ref([]);
@@ -15,9 +15,14 @@
     const dayTrendingSeries = ref([]);
     const popularSeries = ref([]);
 
+    // Recommandations globales
+    const generalRecommendations = ref([]);
+    const loadingRecs = ref(false);
+
     const sliderTrending = ref(null);
     const sliderPopular = ref(null);
     const sliderInTheater = ref(null);
+    const sliderRecommendations = ref(null);
 
     const scroll = (sliderRef, direction) => {
         if (!sliderRef || !sliderRef.$el) return;
@@ -33,7 +38,6 @@
     const currentDay = String(date.getDate()).padStart(2, '0');
     const currentDateString = `${currentYear}-${currentMonth}-${currentDay}`;
 
-    //Fusion et tri dynamique selon le filtre
     const currentTrending = computed(() => {
         if (mediaType.value === 'movie') return dayTrendingMovies.value;
         if (mediaType.value === 'serie') return dayTrendingSeries.value;
@@ -50,7 +54,11 @@
         return inTheaterMovies.value.filter(movie => movie.release_date <= currentDateString);
     });
 
-    //Ajout d'un tag media_type
+    const filteredRecommendations = computed(() => {
+        if (mediaType.value === 'all') return generalRecommendations.value;
+        return generalRecommendations.value.filter(item => item.type === mediaType.value);
+    });
+
     const fetchMovies = async () => {
         try {
             const [trendingRes, popularRes, inTheaterRes] = await Promise.all([
@@ -79,10 +87,42 @@
         }
     };
 
-    //Remise à zéro du scroll
+    const fetchGeneralRecommendations = async (forceRefresh = false) => {
+        try {
+            const token = localStorage.getItem('user_token');
+            if (!token) return;
+
+            if (forceRefresh) {
+                loadingRecs.value = true;
+            }
+
+            const response = await axios.get(`${apiPath}/recommendations/general`, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { forceRefresh }
+            });
+            generalRecommendations.value = response.data;
+            
+            // Si on vient de rafraîchir manuellement, on ramène le scroll au début
+            if (forceRefresh && sliderRecommendations.value && sliderRecommendations.value.$el) {
+                const el = sliderRecommendations.value.$el.querySelector('.v-slide-group__container');
+                if (el) el.scrollTo({ left: 0, behavior: 'smooth' });
+            }
+
+        } catch (error) {
+            console.error('Error fetching general recommendations:', error);
+        } finally {
+            loadingRecs.value = false;
+        }
+    };
+
+    // Fonction déclenchée par le bouton de rafraîchissement
+    const refreshRecommendations = () => {
+        fetchGeneralRecommendations(true);
+    };
+
     watch(mediaType, () => {
         setTimeout(() => {
-            const sliders = [sliderTrending.value, sliderPopular.value, sliderInTheater.value];
+            const sliders = [sliderTrending.value, sliderPopular.value, sliderInTheater.value, sliderRecommendations.value];
             sliders.forEach(slider => {
                 if (slider && slider.$el) {
                     const el = slider.$el.querySelector('.v-slide-group__container');
@@ -95,6 +135,7 @@
     onMounted(() => {
         fetchMovies();
         fetchSeries();
+        fetchGeneralRecommendations(); // Ne force pas le refresh par défaut au chargement
     });
 </script>
 
@@ -117,7 +158,71 @@
       </v-btn-toggle>
     </div>
 
-    <div class="pt-4 pb-8">
+    <!-- Section Recommandations Globales -->
+    <div v-if="filteredRecommendations.length > 0" class="pt-4 pb-8">
+      <div class="d-flex align-center justify-space-between section-header">
+        <h1 class="text-h5 font-weight-bold mb-2 section-title d-flex align-center">
+          <v-icon color="#8C52FF" class="mr-2" size="28">mdi-star-shooting</v-icon>
+          Recommandé pour vous
+          <v-btn 
+            icon="mdi-refresh" 
+            variant="text" 
+            size="small" 
+            color="#8C52FF"
+            class="ml-2"
+            :loading="loadingRecs"
+            @click="refreshRecommendations"
+            v-tooltip="'Rafraîchir les suggestions'"
+          ></v-btn>
+        </h1>
+        <div class="navigation-arrows">
+          <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderRecommendations, 'prev')"></v-btn>
+          <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderRecommendations, 'next')"></v-btn>
+        </div>
+      </div>
+
+      <v-slide-group ref="sliderRecommendations" :show-arrows="false" class="full-width-slide">
+        <v-slide-group-item v-for="item in filteredRecommendations" :key="`rec-item-${item.type}-${item.id}`">
+          <div class="card-container ma-4">
+            <div class="border-wrapper relative">
+              <v-card
+                class="movie-card"
+                rounded="l"
+                width="150"
+                flat
+                v-tooltip="{ text: item.title, openDelay: 500, location: 'bottom' }"
+                @click="$router.push(`/${item.type}/${item.id}`)"
+              >
+                <v-img
+                  :src="item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : noPoster"
+                  cover
+                  aspect-ratio="2/3"
+                  class="movie-img"
+                ></v-img>
+
+                <!-- Badge type si vue Général -->
+                <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                  <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                    {{ item.type === 'serie' ? 'Série' : 'Film' }}
+                  </v-chip>
+                </div>
+
+                <!-- Note TMDB en bas -->
+                <div class="badge-container-bottom pa-1" v-if="item.voteAverage">
+                  <v-chip size="x-small" color="black" variant="flat" class="text-white font-weight-bold shadow-badge opacity-90">
+                    <v-icon start icon="mdi-star" size="12" color="amber"></v-icon>
+                    {{ Math.round(item.voteAverage * 10) / 10 }}
+                  </v-chip>
+                </div>
+              </v-card>
+            </div>
+          </div>
+        </v-slide-group-item>
+      </v-slide-group>
+    </div>
+
+    <!-- Section Tendances du jour -->
+    <div class="pb-8" :class="{'pt-4': filteredRecommendations.length === 0}">
       <div class="d-flex align-center justify-space-between section-header">
         <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
         <div class="navigation-arrows">
@@ -145,7 +250,6 @@
                   class="movie-img"
                 ></v-img>
                 
-                <!--Badge sorti de l'image pour éviter le zoom-->
                 <div v-if="mediaType === 'all'" class="badge-container pa-1">
                   <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
                     {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
@@ -160,6 +264,7 @@
       </v-slide-group>
     </div>
 
+    <!-- Section Populaires -->
     <div class="pb-8">
       <div class="d-flex align-center justify-space-between section-header">
         <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
@@ -188,7 +293,6 @@
                   class="movie-img"
                 ></v-img>
 
-                <!--Badge sorti de l'image pour éviter le zoom-->
                 <div v-if="mediaType === 'all'" class="badge-container pa-1">
                   <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
                     {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
@@ -203,6 +307,7 @@
       </v-slide-group>
     </div>
 
+    <!-- Section En Salles -->
     <div v-if="mediaType === 'movie' || mediaType === 'all'" class="pb-8">
       <div class="d-flex align-center justify-space-between section-header">
         <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
@@ -231,7 +336,6 @@
                   class="movie-img"
                 ></v-img>
 
-                <!--Badge sorti de l'image pour éviter le zoom-->
                 <div v-if="mediaType === 'all'" class="badge-container pa-1">
                   <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">
                     Film
@@ -272,7 +376,7 @@
     .section-title {
         position: relative;
         padding-bottom: 15px;
-        display: inline-block;
+        display: inline-flex;
         margin-left: 0 !important;
     }
 
@@ -316,10 +420,17 @@
         transform: scale(1.1);
     }
 
-    /*Positionnement fixe par dessus l'image*/
     .badge-container {
         position: absolute;
         top: 0;
+        right: 0;
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    .badge-container-bottom {
+        position: absolute;
+        bottom: 0;
         right: 0;
         z-index: 10;
         pointer-events: none;
