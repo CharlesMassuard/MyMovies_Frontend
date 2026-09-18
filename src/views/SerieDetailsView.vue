@@ -1,19 +1,26 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import ConfirmationDialog from '../components/ConfirmationDialog.vue';
 import AuthDialog from '../components/AuthDialog.vue';
 import DateDialog from '../components/DateDialog.vue';
 import RatingDialog from '../components/RatingDialog.vue';
+import TrailerDialog from '../components/TrailerDialog.vue';
 import noPoster from '../assets/noPosterAvailable.webp';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const route = useRoute();
+const router = useRouter();
 
 const serieId = computed(() => route.params.id);
 const serieDetails = ref({});
 const serieCredits = ref({});
+
+//Nouvelles-variables-pour-les-fonctionnalités
+const similarSeries = ref([]);
+const trailerKey = ref(null);
+const dialogTrailer = ref(false);
 
 const dialogConfirmation = ref(false);
 const dialogDate = ref(false);
@@ -130,6 +137,27 @@ const fetchDetailsSerie = async () => {
     serieCredits.value = creditsResponse.data;
   } catch (error) {
     console.error('Error fetching series details:', error);
+  }
+};
+
+//Récupération-des-séries-similaires
+const fetchSimilarSeries = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/series/${serieId.value}/similar`);
+    similarSeries.value = response.data.results.slice(0, 12);
+  } catch (error) {
+    console.error('Error fetching similar series:', error);
+  }
+};
+
+//Récupération-de-la-bande-annonce
+const fetchVideos = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/series/${serieId.value}/videos`);
+    const trailer = response.data.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+    if (trailer) trailerKey.value = trailer.key;
+  } catch (error) {
+    console.error('Error fetching videos:', error);
   }
 };
 
@@ -353,23 +381,39 @@ const periodYears = computed(() => {
   return `${serieDetails.value.release_year} - Aujourd'hui`;
 });
 
+//Navigation-vers-une-série-similaire
+const goToSerie = (id) => {
+  router.push(`/serie/${id}`);
+};
+
 onMounted(() => {
   fetchDetailsSerie();
   fetchStatusUserSerie();
   fetchRating();
+  fetchSimilarSeries();
+  fetchVideos();
 });
 
+//Gestion-du-changement-de-série-(clic-sur-série-similaire)
 watch(() => serieId.value, () => {
   serieDetails.value = {};
   serieCredits.value = {};
+  similarSeries.value = [];
+  trailerKey.value = null;
   statusUserSerie.value = "UNDEFINED";
   userRating.value = 0;
   userComment.value = "";
   selectedSeasonInfo.value = null;
   activeSeasonNumber.value = null;
+  
   fetchDetailsSerie();
   fetchStatusUserSerie();
   fetchRating();
+  fetchSimilarSeries();
+  fetchVideos();
+  
+  //Scroll-en-haut
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 </script>
 
@@ -432,6 +476,7 @@ watch(() => serieId.value, () => {
                       v-if="net.logo_path" 
                       :src="`https://image.tmdb.org/t/p/w92${net.logo_path}`" 
                       :alt="net.name"
+                      :title="net.name"
                       style="height: 20px; max-width: 100px; object-fit: contain; display: block;" 
                     />
                     <span v-else class="text-caption text-black px-1 font-weight-bold">{{ net.name }}</span>
@@ -517,6 +562,19 @@ watch(() => serieId.value, () => {
               >
                 <v-icon start color="amber">mdi-star</v-icon>
                 <span class="text-black font-weight-bold">{{ displayRating }}</span>
+              </v-btn>
+
+              <!--Bouton-Bande-Annonce-->
+              <v-btn
+                v-if="trailerKey"
+                rounded="xl"
+                variant="outlined"
+                color="white"
+                class="action-btn px-6"
+                @click="dialogTrailer = true"
+              >
+                <v-icon start>mdi-play</v-icon>
+                <span class="font-weight-bold">Bande-annonce</span>
               </v-btn>
             </div>
 
@@ -704,7 +762,7 @@ watch(() => serieId.value, () => {
     </v-container>
 
     <!--Casting-->
-    <v-container class="mt-6 mb-10" v-if="serieCredits.cast?.length">
+    <v-container class="mt-6 mb-6" v-if="serieCredits.cast?.length">
       <h3 class="text-h5 font-weight-bold mb-6">Têtes d'affiche</h3>
       <v-row class="flex-nowrap overflow-x-auto pb-4">
         <v-col 
@@ -721,8 +779,35 @@ watch(() => serieId.value, () => {
               class="bg-grey-lighten-2"
             ></v-img>
             <v-card-text class="pa-2">
-              <p class="font-weight-bold mb-0 text-truncate text-body-2">{{ actor.name }}</p>
-              <p class="text-caption text-grey-darken-1 text-truncate">{{ actor.roles?.[0]?.character || actor.character }}</p>
+              <p class="font-weight-bold mb-0 text-truncate text-body-2" :title="actor.name">{{ actor.name }}</p>
+              <p class="text-caption text-grey-darken-1 text-truncate" :title="actor.roles?.[0]?.character || actor.character">{{ actor.roles?.[0]?.character || actor.character }}</p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+
+    <!--Séries-Similaires-->
+    <v-container class="mb-10" v-if="similarSeries.length">
+      <h3 class="text-h5 font-weight-bold mb-6">Les spectateurs ont aussi aimé</h3>
+      <v-row class="flex-nowrap overflow-x-auto pb-4">
+        <v-col v-for="similar in similarSeries" :key="similar.id" cols="6" sm="4" md="3" lg="2" class="flex-shrink-0">
+          <v-card 
+            class="rounded-lg overflow-hidden elevation-2 h-100 similar-card"
+            @click="goToSerie(similar.id)"
+          >
+            <v-img 
+              :src="similar.poster_path ? `https://image.tmdb.org/t/p/w300${similar.poster_path}` : noPoster" 
+              height="220" 
+              cover
+              class="bg-grey-lighten-2"
+            ></v-img>
+            <v-card-text class="pa-2">
+              <p class="font-weight-bold mb-0 text-truncate text-body-2" :title="similar.name">{{ similar.name }}</p>
+              <div class="d-flex align-center mt-1" v-if="similar.vote_average">
+                <v-icon color="amber" size="small" class="mr-1">mdi-star</v-icon>
+                <span class="text-caption font-weight-medium">{{ Math.round(similar.vote_average * 10) / 10 }}</span>
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -759,10 +844,14 @@ watch(() => serieId.value, () => {
     v-model="dialogAuth"
     :message="authMessage"
   />
+
+  <TrailerDialog
+    v-model="dialogTrailer"
+    :videoKey="trailerKey"
+  />
 </template>
 
 <style scoped>
-/*Styles-identiques-à-ceux-d'origine-pour-SeriePage*/
 .serie-page {
   background: white;
   min-height: 100vh;
@@ -842,6 +931,15 @@ watch(() => serieId.value, () => {
 }
 .episode-img {
   min-width: 250px;
+}
+/*Effet-de-survol-pour-les-cartes-similaires*/
+.similar-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.similar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
 }
 @media (max-width: 960px) {
   .backdrop-image::after {

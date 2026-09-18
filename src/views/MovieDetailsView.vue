@@ -6,15 +6,23 @@ import ConfirmationDialog from '../components/ConfirmationDialog.vue';
 import AuthDialog from '../components/AuthDialog.vue';
 import DateDialog from '../components/DateDialog.vue';
 import RatingDialog from '../components/RatingDialog.vue';
+import TrailerDialog from '../components/TrailerDialog.vue';
 import noPoster from '../assets/noPosterAvailable.webp';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+const router = useRouter();
 const route = useRoute();
 const movieId = computed(() => route.params.id);
 const movieDetails = ref({});
 const movieCredits = ref({});
 const directors = ref([]);
+
+//Nouvelles-variables-pour-les-fonctionnalités
+const similarMovies = ref([]);
+const watchProviders = ref([]);
+const trailerKey = ref(null);
+const dialogTrailer = ref(false);
 
 const dialogConfirmation = ref(false);
 const dialogDate = ref(false);
@@ -105,6 +113,42 @@ const fetchDetailsMovies = async () => {
     }
   } catch (error) {
     console.error('Error fetching movie details:', error);
+  }
+};
+
+//Récupération-des-films-similaires
+const fetchSimilarMovies = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/movies/${movieId.value}/similar`);
+    similarMovies.value = response.data.results.slice(0, 12);
+  } catch (error) {
+    console.error('Error fetching similar movies:', error);
+  }
+};
+
+//Récupération-de-la-bande-annonce
+const fetchVideos = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/movies/${movieId.value}/videos`);
+    //On-cherche-un-trailer-officiel-sur-YouTube
+    const trailer = response.data.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+    if (trailer) trailerKey.value = trailer.key;
+  } catch (error) {
+    console.error('Error fetching videos:', error);
+  }
+};
+
+//Récupération-des-plateformes-de-streaming-(focus-sur-la-France)
+const fetchProviders = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/movies/${movieId.value}/providers`);
+    //FR-pour-la-France,-on-privilégie-le-streaming-gratuit/inclus-(flatrate)
+    const frProviders = response.data.results?.FR;
+    if (frProviders) {
+      watchProviders.value = frProviders.flatrate || frProviders.rent || frProviders.buy || [];
+    }
+  } catch (error) {
+    console.error('Error fetching providers:', error);
   }
 };
 
@@ -301,15 +345,27 @@ const allGenres = computed(() => {
   return Array.isArray(genres) ? genres.map(g => g.name).join(', ') : '';
 });
 
+//Fonction-pour-naviguer-vers-un-film-similaire
+const goToMovie = (id) => {
+  router.push(`/movie/${id}`);
+};
+
 onMounted(() => {
   fetchDetailsMovies();
   fetchStatusUserMovie();
   fetchRating();
+  fetchSimilarMovies();
+  fetchVideos();
+  fetchProviders();
 });
 
+//Gestion-du-changement-de-film-(ex:-clic-sur-un-film-similaire)
 watch(() => movieId.value, () => {
   movieDetails.value = {};
   movieCredits.value = {};
+  similarMovies.value = [];
+  watchProviders.value = [];
+  trailerKey.value = null;
   statusUserMovie.value = "UNDEFINED";
   userRating.value = 0;
   userComment.value = "";
@@ -317,6 +373,12 @@ watch(() => movieId.value, () => {
   fetchDetailsMovies();
   fetchStatusUserMovie();
   fetchRating();
+  fetchSimilarMovies();
+  fetchVideos();
+  fetchProviders();
+  
+  //Scroll-en-haut-de-page
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 </script>
 
@@ -389,6 +451,24 @@ watch(() => movieId.value, () => {
                   Site officiel
                 </v-btn>
               </div>
+
+              <!--Plateformes-de-streaming-(Providers)-->
+              <div v-if="watchProviders.length > 0" class="d-flex align-center flex-wrap mt-4 ga-3">
+                <span class="text-caption text-grey-lighten-2">Disponible en streaming :</span>
+                <div 
+                  v-for="provider in watchProviders" 
+                  :key="provider.provider_id" 
+                  class="rounded overflow-hidden elevation-2 d-flex"
+                >
+                  <img 
+                    :src="`https://image.tmdb.org/t/p/w92${provider.logo_path}`" 
+                    :alt="provider.provider_name"
+                    :title="provider.provider_name"
+                    style="height: 35px; width: 35px; object-fit: cover;" 
+                  />
+                </div>
+              </div>
+
             </div>
 
             <!--Score-TMDB-->
@@ -457,6 +537,19 @@ watch(() => movieId.value, () => {
                 <v-icon start color="amber">mdi-star</v-icon>
                 <span class="text-black font-weight-bold">{{ displayRating }}</span>
               </v-btn>
+
+              <!--Bouton-Bande-Annonce-->
+              <v-btn
+                v-if="trailerKey"
+                rounded="xl"
+                variant="outlined"
+                color="white"
+                class="action-btn px-6"
+                @click="dialogTrailer = true"
+              >
+                <v-icon start>mdi-play</v-icon>
+                <span class="font-weight-bold">Bande-annonce</span>
+              </v-btn>
             </div>
 
             <!--Synopsis-et-Équipe-->
@@ -476,7 +569,7 @@ watch(() => movieId.value, () => {
     </div>
 
     <!--Têtes-d'affiche-->
-    <v-container class="mt-10 mb-10" v-if="movieCredits.cast?.length">
+    <v-container class="mt-10 mb-6" v-if="movieCredits.cast?.length">
       <h3 class="text-h5 font-weight-bold mb-6">Têtes d'affiche</h3>
       <v-row class="flex-nowrap overflow-x-auto pb-4">
         <v-col v-for="actor in movieCredits.cast" :key="actor.id" cols="6" sm="4" md="2" class="flex-shrink-0">
@@ -488,8 +581,35 @@ watch(() => movieId.value, () => {
               class="bg-grey-lighten-2"
             ></v-img>
             <v-card-text class="pa-2">
-              <p class="font-weight-bold mb-0 text-truncate text-body-2">{{ actor.name }}</p>
-              <p class="text-caption text-grey-darken-1 text-truncate">{{ actor.character }}</p>
+              <p class="font-weight-bold mb-0 text-truncate text-body-2" :title="actor.name">{{ actor.name }}</p>
+              <p class="text-caption text-grey-darken-1 text-truncate" :title="actor.character">{{ actor.character }}</p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+
+    <!--Films-Similaires-->
+    <v-container class="mb-10" v-if="similarMovies.length">
+      <h3 class="text-h5 font-weight-bold mb-6">Les spectateurs ont aussi aimé</h3>
+      <v-row class="flex-nowrap overflow-x-auto pb-4">
+        <v-col v-for="similar in similarMovies" :key="similar.id" cols="6" sm="4" md="3" lg="2" class="flex-shrink-0">
+          <v-card 
+            class="rounded-lg overflow-hidden elevation-2 h-100 similar-card"
+            @click="goToMovie(similar.id)"
+          >
+            <v-img 
+              :src="similar.poster_path ? `https://image.tmdb.org/t/p/w300${similar.poster_path}` : noPoster" 
+              height="220" 
+              cover
+              class="bg-grey-lighten-2"
+            ></v-img>
+            <v-card-text class="pa-2">
+              <p class="font-weight-bold mb-0 text-truncate text-body-2" :title="similar.title">{{ similar.title }}</p>
+              <div class="d-flex align-center mt-1" v-if="similar.vote_average">
+                <v-icon color="amber" size="small" class="mr-1">mdi-star</v-icon>
+                <span class="text-caption font-weight-medium">{{ Math.round(similar.vote_average * 10) / 10 }}</span>
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -525,10 +645,14 @@ watch(() => movieId.value, () => {
     v-model="dialogAuth"
     :message="authMessage"
   />
+
+  <TrailerDialog
+    v-model="dialogTrailer"
+    :videoKey="trailerKey"
+  />
 </template>
 
 <style scoped>
-/*Styles-identiques-à-ceux-d'origine-pour-MoviePage*/
 .movie-page {
   background: white;
   min-height: 100vh;
@@ -588,6 +712,15 @@ watch(() => movieId.value, () => {
 }
 .action-btn {
   height: 44px !important;
+}
+/*Effet-de-survol-pour-les-cartes-similaires*/
+.similar-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.similar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
 }
 @media (max-width: 960px) {
   .backdrop-image::after {
