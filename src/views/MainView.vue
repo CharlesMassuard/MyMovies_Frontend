@@ -3,6 +3,7 @@
     import { useRouter } from 'vue-router';
     import axios from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
+    import AuthDialog from '../components/AuthDialog.vue';
 
     const router = useRouter();
     const apiPath = import.meta.env.VITE_API_BASE_URL;
@@ -19,7 +20,11 @@
     const loadingRecs = ref(false);
     
     const userLibrary = ref([]);
+    
+    const dialogAuth = ref(false);
+    const authMessage = ref("");
 
+    const sliderActions = ref(null);
     const sliderTrending = ref(null);
     const sliderPopular = ref(null);
     const sliderInTheater = ref(null);
@@ -64,6 +69,22 @@
         if (mediaType.value === 'all') return generalRecommendations.value;
         return generalRecommendations.value.filter(item => item.type === mediaType.value);
     });
+    
+    const actionItems = computed(() => {
+        let items = userLibrary.value.filter(i => {
+            return i.status === 'WATCHING' || (i.status === 'WATCHED' && !i.rating);
+        });
+        
+        if (mediaType.value !== 'all') {
+            items = items.filter(i => i.type === mediaType.value);
+        }
+        
+        return items.sort((a, b) => {
+            if (a.status === 'WATCHING' && b.status !== 'WATCHING') return -1;
+            if (b.status === 'WATCHING' && a.status !== 'WATCHING') return 1;
+            return 0;
+        }).slice(0, 15);
+    });
 
     const fetchMovies = async () => {
         const [trendingRes, popularRes, inTheaterRes] = await Promise.all([
@@ -91,17 +112,22 @@
 
         if (forceRefresh) loadingRecs.value = true;
 
-        const response = await axios.get(`${apiPath}/recommendations/general`, {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { forceRefresh }
-        });
-        generalRecommendations.value = response.data;
-        
-        if (forceRefresh && sliderRecommendations.value?.$el) {
-            const el = sliderRecommendations.value.$el.querySelector('.v-slide-group__container');
-            if (el) el.scrollTo({ left: 0, behavior: 'smooth' });
+        try {
+            const response = await axios.get(`${apiPath}/recommendations/general`, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { forceRefresh }
+            });
+            generalRecommendations.value = response.data;
+            
+            if (forceRefresh && sliderRecommendations.value?.$el) {
+                const el = sliderRecommendations.value.$el.querySelector('.v-slide-group__container');
+                if (el) el.scrollTo({ left: 0, behavior: 'smooth' });
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            loadingRecs.value = false;
         }
-        loadingRecs.value = false;
     };
     
     const fetchUserLibrary = async () => {
@@ -112,8 +138,8 @@
                 axios.get(`${apiPath}/user/movies`, { headers: { Authorization: `Bearer ${token}` } }),
                 axios.get(`${apiPath}/user/series`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
-            const m = moviesRes.data.map(i => ({ id: i.movie.id, type: 'movie', status: i.status }));
-            const s = seriesRes.data.map(i => ({ id: i.serie.id, type: 'serie', status: i.status }));
+            const m = moviesRes.data.map(i => ({ id: i.movie.id, type: 'movie', status: i.status, data: i.movie, rating: i.rating }));
+            const s = seriesRes.data.map(i => ({ id: i.serie.id, type: 'serie', status: i.status, data: i.serie, rating: i.rating }));
             userLibrary.value = [...m, ...s];
         } catch (error) {
             console.error('Erreur récupération bibliothèque:', error);
@@ -166,29 +192,34 @@
         }
     };
     
+    const checkAuth = (message) => {
+        if (!localStorage.getItem('user_token')) {
+            authMessage.value = message;
+            dialogAuth.value = true;
+            return false;
+        }
+        return true;
+    };
+    
     const addToWatchlist = async (item, event) => {
         if (event) event.stopPropagation();
         
         const type = item.media_type || item.type;
         const existing = userLibrary.value.find(i => i.id === item.id && i.type === type);
         
-        //Bloquer-si-déjà-dans-la-liste
         if (existing) return;
 
-        const token = localStorage.getItem('user_token');
-        if (!token) {
-            alert("Veuillez vous connecter pour ajouter à votre liste.");
-            return;
-        }
+        if (!checkAuth("Connectez-vous pour ajouter à votre liste.")) return;
         
         const route = type === 'serie' ? `/user/series/to-watch/${item.id}` : `/user/movies/to-watch/${item.id}`;
         
         try {
+            const token = localStorage.getItem('user_token');
             await axios.post(`${apiPath}${route}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            userLibrary.value.push({ id: item.id, type, status: 'TO_WATCH' });
+            userLibrary.value.push({ id: item.id, type, status: 'TO_WATCH', rating: null });
         } catch (error) {
             console.error('Erreur lors de l\'ajout :', error);
         }
@@ -196,7 +227,7 @@
 
     watch(mediaType, async () => {
         await nextTick();
-        const sliders = [sliderTrending.value, sliderPopular.value, sliderInTheater.value, sliderRecommendations.value];
+        const sliders = [sliderActions.value, sliderTrending.value, sliderPopular.value, sliderInTheater.value, sliderRecommendations.value];
         sliders.forEach(slider => {
             if (slider?.$el) {
                 const el = slider.$el.querySelector('.v-slide-group__container');
@@ -233,6 +264,8 @@
             height="350"
             hide-delimiter-background
             show-arrows="hover"
+            transition="fade-transition"
+            reverse-transition="fade-transition"
             class="spotlight-carousel rounded-xl elevation-4"
           >
             <v-carousel-item
@@ -251,6 +284,9 @@
                               <div class="a-la-une-tag rounded-pill px-3 py-1">
                                   À LA UNE
                               </div>
+                              <v-chip size="small" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" variant="flat" class="font-weight-bold text-white shadow-badge">
+                                  {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                              </v-chip>
                               <v-chip size="small" color="white" variant="flat" class="font-weight-bold text-black shadow-badge">
                                 <v-icon start icon="mdi-star" size="14" color="amber-darken-2"></v-icon>
                                 {{ Math.round(item.vote_average * 10) / 10 }}
@@ -313,265 +349,298 @@
           </v-btn-toggle>
       </div>
 
+      <!--Section-En-Cours-et-A-Noter-->
+      <div v-if="actionItems.length > 0" class="pb-8">
+        <div class="d-flex align-center justify-space-between section-header">
+          <h1 class="text-h5 font-weight-bold mb-2 section-title">Votre suivi</h1>
+          <div class="navigation-arrows">
+            <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderActions, 'prev')"></v-btn>
+            <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderActions, 'next')"></v-btn>
+          </div>
+        </div>
+
+        <v-slide-group ref="sliderActions" :show-arrows="false" class="full-width-slide">
+          <v-slide-group-item v-for="item in actionItems" :key="`action-item-${item.type}-${item.id}`">
+            <div class="card-container ma-4">
+              <div class="border-wrapper">
+                <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.type}/${item.id}`)">
+                  <v-img :src="item.data.posterUrl ? `https://image.tmdb.org/t/p/w500${item.data.posterUrl}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
+
+                  <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                    <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                      {{ item.type === 'serie' ? 'Série' : 'Film' }}
+                    </v-chip>
+                  </div>
+
+                  <div class="badge-container-bottom pa-1">
+                    <v-chip size="x-small" :color="item.status === 'WATCHING' ? 'info' : 'success'" variant="flat" class="text-white font-weight-bold shadow-badge">
+                      <v-icon start :icon="item.status === 'WATCHING' ? 'mdi-play-circle-outline' : 'mdi-star-outline'" size="12"></v-icon>
+                      {{ item.status === 'WATCHING' ? 'En cours' : 'À noter' }}
+                    </v-chip>
+                  </div>
+
+                  <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
+                      <v-btn 
+                        icon="mdi-arrow-right" 
+                        color="white" 
+                        variant="flat" 
+                        density="comfortable" 
+                        class="elevation-4 no-focus hover-scale" 
+                        :ripple="false" 
+                        v-tooltip="'Continuer'" 
+                        @click.stop="$router.push(`/${item.type}/${item.id}`)"
+                      ></v-btn>
+                  </div>
+                </v-card>
+              </div>
+            </div>
+          </v-slide-group-item>
+        </v-slide-group>
+      </div>
+
       <!--Section-Recommandations-->
-      <div v-if="filteredRecommendations.length > 0" class="pb-8 slider-wrapper">
+      <div v-if="filteredRecommendations.length > 0" class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
           <h1 class="text-h5 font-weight-bold mb-2 section-title d-flex align-center">
             <v-icon color="#8C52FF" class="mr-2" size="28">mdi-star-shooting</v-icon>
             Recommandé pour vous
             <v-btn icon="mdi-refresh" variant="text" size="small" color="#8C52FF" class="ml-2 no-focus hover-scale" :ripple="false" :loading="loadingRecs" @click="refreshRecommendations"></v-btn>
           </h1>
+          <div class="navigation-arrows">
+            <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderRecommendations, 'prev')"></v-btn>
+            <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderRecommendations, 'next')"></v-btn>
+          </div>
         </div>
 
-        <div class="slider-container">
-            <div class="nav-arrow-left" @click="scroll(sliderRecommendations, 'prev')">
-                <v-icon size="x-large" color="white">mdi-chevron-left</v-icon>
-            </div>
-            <div class="nav-arrow-right" @click="scroll(sliderRecommendations, 'next')">
-                <v-icon size="x-large" color="white">mdi-chevron-right</v-icon>
-            </div>
+        <v-slide-group ref="sliderRecommendations" :show-arrows="false" class="full-width-slide">
+          <v-slide-group-item v-for="item in filteredRecommendations" :key="`rec-item-${item.type}-${item.id}`">
+            <div class="card-container ma-4">
+              <div class="border-wrapper">
+                <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.type}/${item.id}`)">
+                  <v-img :src="item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
-            <v-slide-group ref="sliderRecommendations" :show-arrows="false" class="full-width-slide">
-              <v-slide-group-item v-for="item in filteredRecommendations" :key="`rec-item-${item.type}-${item.id}`">
-                <div class="card-container ma-4">
-                  <div class="border-wrapper">
-                    <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.type}/${item.id}`)">
-                      <v-img :src="item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
-
-                      <div v-if="mediaType === 'all'" class="badge-container pa-1">
-                        <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                          {{ item.type === 'serie' ? 'Série' : 'Film' }}
-                        </v-chip>
-                      </div>
-
-                      <div class="badge-container-bottom pa-1" v-if="item.voteAverage">
-                        <v-chip size="x-small" color="black" variant="flat" class="text-white font-weight-bold shadow-badge opacity-90">
-                          <v-icon start icon="mdi-star" size="12" color="amber"></v-icon>
-                          {{ Math.round(item.voteAverage * 10) / 10 }}
-                        </v-chip>
-                      </div>
-
-                      <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
-                          <v-btn 
-                            icon="mdi-play" 
-                            color="white" 
-                            variant="flat" 
-                            density="comfortable" 
-                            class="elevation-4 no-focus hover-scale" 
-                            :ripple="false" 
-                            v-tooltip="'Détails'" 
-                            @click.stop="$router.push(`/${item.type}/${item.id}`)"
-                          ></v-btn>
-                          <v-btn 
-                            :icon="getStatusInfo(item).icon" 
-                            :color="getStatusInfo(item).btnColor" 
-                            :variant="getStatusInfo(item).isOutlined ? 'outlined' : 'flat'" 
-                            density="comfortable" 
-                            class="no-focus" 
-                            :class="{
-                                'quick-btn-border': getStatusInfo(item).isOutlined,
-                                'hover-scale': !getStatusInfo(item).hasStatus
-                            }"
-                            :ripple="false"
-                            v-tooltip="getStatusInfo(item).text" 
-                            @click.stop="addToWatchlist(item, $event)"
-                            :style="{ cursor: getStatusInfo(item).hasStatus ? 'default' : 'pointer' }"
-                          ></v-btn>
-                      </div>
-                    </v-card>
+                  <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                    <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                      {{ item.type === 'serie' ? 'Série' : 'Film' }}
+                    </v-chip>
                   </div>
-                </div>
-              </v-slide-group-item>
-            </v-slide-group>
-        </div>
+
+                  <div class="badge-container-bottom pa-1" v-if="item.voteAverage">
+                    <v-chip size="x-small" color="black" variant="flat" class="text-white font-weight-bold shadow-badge opacity-90">
+                      <v-icon start icon="mdi-star" size="12" color="amber"></v-icon>
+                      {{ Math.round(item.voteAverage * 10) / 10 }}
+                    </v-chip>
+                  </div>
+
+                  <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
+                      <v-btn 
+                        icon="mdi-play" 
+                        color="white" 
+                        variant="flat" 
+                        density="comfortable" 
+                        class="elevation-4 no-focus hover-scale" 
+                        :ripple="false" 
+                        v-tooltip="'Détails'" 
+                        @click.stop="$router.push(`/${item.type}/${item.id}`)"
+                      ></v-btn>
+                      <v-btn 
+                        :icon="getStatusInfo(item).icon" 
+                        :color="getStatusInfo(item).btnColor" 
+                        :variant="getStatusInfo(item).isOutlined ? 'outlined' : 'flat'" 
+                        density="comfortable" 
+                        class="no-focus" 
+                        :class="{
+                            'quick-btn-border': getStatusInfo(item).isOutlined,
+                            'hover-scale': !getStatusInfo(item).hasStatus
+                        }"
+                        :ripple="false"
+                        v-tooltip="getStatusInfo(item).text" 
+                        @click.stop="addToWatchlist(item, $event)"
+                        :style="{ cursor: getStatusInfo(item).hasStatus ? 'default' : 'pointer' }"
+                      ></v-btn>
+                  </div>
+                </v-card>
+              </div>
+            </div>
+          </v-slide-group-item>
+        </v-slide-group>
       </div>
 
       <!--Section-Tendances-->
-      <div class="pb-8 slider-wrapper">
+      <div class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
           <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
+          <div class="navigation-arrows">
+            <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderTrending, 'prev')"></v-btn>
+            <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderTrending, 'next')"></v-btn>
+          </div>
         </div>
 
-        <div class="slider-container">
-            <div class="nav-arrow-left" @click="scroll(sliderTrending, 'prev')">
-                <v-icon size="x-large" color="white">mdi-chevron-left</v-icon>
-            </div>
-            <div class="nav-arrow-right" @click="scroll(sliderTrending, 'next')">
-                <v-icon size="x-large" color="white">mdi-chevron-right</v-icon>
-            </div>
-
-            <v-slide-group ref="sliderTrending" :show-arrows="false" class="full-width-slide pt-4">
-              <v-slide-group-item v-for="(item, index) in currentTrending" :key="`trend-${item.media_type}-${item.id}`">
-                <div class="card-container ma-4 mt-0">
-                  <div class="border-wrapper">
-                    <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.media_type}/${item.id}`)">
-                      <v-img :src="item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
-                      
-                      <div v-if="mediaType === 'all'" class="badge-container pa-1">
-                        <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                          {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
-                        </v-chip>
-                      </div>
-
-                      <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
-                          <v-btn 
-                            icon="mdi-play" 
-                            color="white" 
-                            variant="flat" 
-                            density="comfortable" 
-                            class="elevation-4 no-focus hover-scale" 
-                            :ripple="false" 
-                            v-tooltip="'Détails'" 
-                            @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
-                          ></v-btn>
-                          <v-btn 
-                            :icon="getStatusInfo(item).icon" 
-                            :color="getStatusInfo(item).btnColor" 
-                            :variant="getStatusInfo(item).isOutlined ? 'outlined' : 'flat'" 
-                            density="comfortable" 
-                            class="no-focus" 
-                            :class="{
-                                'quick-btn-border': getStatusInfo(item).isOutlined,
-                                'hover-scale': !getStatusInfo(item).hasStatus
-                            }"
-                            :ripple="false"
-                            v-tooltip="getStatusInfo(item).text" 
-                            @click.stop="addToWatchlist(item, $event)"
-                            :style="{ cursor: getStatusInfo(item).hasStatus ? 'default' : 'pointer' }"
-                          ></v-btn>
-                      </div>
-                    </v-card>
+        <v-slide-group ref="sliderTrending" :show-arrows="false" class="full-width-slide pt-4">
+          <v-slide-group-item v-for="(item, index) in currentTrending" :key="`trend-${item.media_type}-${item.id}`">
+            <div class="card-container ma-4">
+              <div class="border-wrapper">
+                <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.media_type}/${item.id}`)">
+                  <v-img :src="item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
+                  
+                  <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                    <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                      {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                    </v-chip>
                   </div>
-                  <span v-if="index < 10" class="ranking-number">{{ index + 1 }}</span>
-                </div>
-              </v-slide-group-item>
-            </v-slide-group>
-        </div>
+
+                  <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
+                      <v-btn 
+                        icon="mdi-play" 
+                        color="white" 
+                        variant="flat" 
+                        density="comfortable" 
+                        class="elevation-4 no-focus hover-scale" 
+                        :ripple="false" 
+                        v-tooltip="'Détails'" 
+                        @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
+                      ></v-btn>
+                      <v-btn 
+                        :icon="getStatusInfo(item).icon" 
+                        :color="getStatusInfo(item).btnColor" 
+                        :variant="getStatusInfo(item).isOutlined ? 'outlined' : 'flat'" 
+                        density="comfortable" 
+                        class="no-focus" 
+                        :class="{
+                            'quick-btn-border': getStatusInfo(item).isOutlined,
+                            'hover-scale': !getStatusInfo(item).hasStatus
+                        }"
+                        :ripple="false"
+                        v-tooltip="getStatusInfo(item).text" 
+                        @click.stop="addToWatchlist(item, $event)"
+                        :style="{ cursor: getStatusInfo(item).hasStatus ? 'default' : 'pointer' }"
+                      ></v-btn>
+                  </div>
+                </v-card>
+              </div>
+              <span class="ranking-number">{{ index + 1 }}</span>
+            </div>
+          </v-slide-group-item>
+        </v-slide-group>
       </div>
 
       <!--Section-Populaires-->
-      <div class="pb-8 slider-wrapper">
+      <div class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
           <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
+          <div class="navigation-arrows">
+            <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderPopular, 'prev')"></v-btn>
+            <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderPopular, 'next')"></v-btn>
+          </div>
         </div>
 
-        <div class="slider-container">
-            <div class="nav-arrow-left" @click="scroll(sliderPopular, 'prev')">
-                <v-icon size="x-large" color="white">mdi-chevron-left</v-icon>
-            </div>
-            <div class="nav-arrow-right" @click="scroll(sliderPopular, 'next')">
-                <v-icon size="x-large" color="white">mdi-chevron-right</v-icon>
-            </div>
+        <v-slide-group ref="sliderPopular" :show-arrows="false" class="full-width-slide">
+          <v-slide-group-item v-for="(item, index) in currentPopular" :key="`pop-${item.media_type}-${item.id}`">
+            <div class="card-container ma-4">
+              <div class="border-wrapper">
+                <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.media_type}/${item.id}`)">
+                  <v-img :src="item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
-            <v-slide-group ref="sliderPopular" :show-arrows="false" class="full-width-slide">
-              <v-slide-group-item v-for="(item, index) in currentPopular" :key="`pop-${item.media_type}-${item.id}`">
-                <div class="card-container ma-4">
-                  <div class="border-wrapper">
-                    <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.media_type}/${item.id}`)">
-                      <v-img :src="item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
-
-                      <div v-if="mediaType === 'all'" class="badge-container pa-1">
-                        <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                          {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
-                        </v-chip>
-                      </div>
-
-                      <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
-                          <v-btn 
-                            icon="mdi-play" 
-                            color="white" 
-                            variant="flat" 
-                            density="comfortable" 
-                            class="elevation-4 no-focus hover-scale" 
-                            :ripple="false" 
-                            v-tooltip="'Détails'" 
-                            @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
-                          ></v-btn>
-                          <v-btn 
-                            :icon="getStatusInfo(item).icon" 
-                            :color="getStatusInfo(item).btnColor" 
-                            :variant="getStatusInfo(item).isOutlined ? 'outlined' : 'flat'" 
-                            density="comfortable" 
-                            class="no-focus" 
-                            :class="{
-                                'quick-btn-border': getStatusInfo(item).isOutlined,
-                                'hover-scale': !getStatusInfo(item).hasStatus
-                            }"
-                            :ripple="false"
-                            v-tooltip="getStatusInfo(item).text" 
-                            @click.stop="addToWatchlist(item, $event)"
-                            :style="{ cursor: getStatusInfo(item).hasStatus ? 'default' : 'pointer' }"
-                          ></v-btn>
-                      </div>
-                    </v-card>
+                  <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                    <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
+                      {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                    </v-chip>
                   </div>
-                </div>
-              </v-slide-group-item>
-            </v-slide-group>
-        </div>
+
+                  <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
+                      <v-btn 
+                        icon="mdi-play" 
+                        color="white" 
+                        variant="flat" 
+                        density="comfortable" 
+                        class="elevation-4 no-focus hover-scale" 
+                        :ripple="false" 
+                        v-tooltip="'Détails'" 
+                        @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
+                      ></v-btn>
+                      <v-btn 
+                        :icon="getStatusInfo(item).icon" 
+                        :color="getStatusInfo(item).btnColor" 
+                        :variant="getStatusInfo(item).isOutlined ? 'outlined' : 'flat'" 
+                        density="comfortable" 
+                        class="no-focus" 
+                        :class="{
+                            'quick-btn-border': getStatusInfo(item).isOutlined,
+                            'hover-scale': !getStatusInfo(item).hasStatus
+                        }"
+                        :ripple="false"
+                        v-tooltip="getStatusInfo(item).text" 
+                        @click.stop="addToWatchlist(item, $event)"
+                        :style="{ cursor: getStatusInfo(item).hasStatus ? 'default' : 'pointer' }"
+                      ></v-btn>
+                  </div>
+                </v-card>
+              </div>
+              <span class="ranking-number">{{ index + 1 }}</span>
+            </div>
+          </v-slide-group-item>
+        </v-slide-group>
       </div>
 
       <!--Section-En-Salles-->
-      <div v-if="mediaType === 'movie' || mediaType === 'all'" class="pb-8 slider-wrapper">
+      <div v-if="mediaType === 'movie' || mediaType === 'all'" class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
           <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
+          <div class="navigation-arrows">
+            <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderInTheater, 'prev')"></v-btn>
+            <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderInTheater, 'next')"></v-btn>
+          </div>
         </div>
 
-        <div class="slider-container">
-            <div class="nav-arrow-left" @click="scroll(sliderInTheater, 'prev')">
-                <v-icon size="x-large" color="white">mdi-chevron-left</v-icon>
-            </div>
-            <div class="nav-arrow-right" @click="scroll(sliderInTheater, 'next')">
-                <v-icon size="x-large" color="white">mdi-chevron-right</v-icon>
-            </div>
+        <v-slide-group ref="sliderInTheater" :show-arrows="false" class="full-width-slide">
+          <v-slide-group-item v-for="(movie, index) in filteredInTheaterMovies" :key="`in-theater-${movie.id}`">
+            <div class="card-container ma-4">
+              <div class="border-wrapper">
+                <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/movie/${movie.id}`)">
+                  <v-img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
-            <v-slide-group ref="sliderInTheater" :show-arrows="false" class="full-width-slide">
-              <v-slide-group-item v-for="(movie, index) in filteredInTheaterMovies" :key="`in-theater-${movie.id}`">
-                <div class="card-container ma-4">
-                  <div class="border-wrapper">
-                    <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/movie/${movie.id}`)">
-                      <v-img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
-
-                      <div v-if="mediaType === 'all'" class="badge-container pa-1">
-                        <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">Film</v-chip>
-                      </div>
-
-                      <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
-                          <v-btn 
-                            icon="mdi-play" 
-                            color="white" 
-                            variant="flat" 
-                            density="comfortable" 
-                            class="elevation-4 no-focus hover-scale" 
-                            :ripple="false" 
-                            v-tooltip="'Détails'" 
-                            @click.stop="$router.push(`/movie/${movie.id}`)"
-                          ></v-btn>
-                          <v-btn 
-                            :icon="getStatusInfo(movie).icon" 
-                            :color="getStatusInfo(movie).btnColor" 
-                            :variant="getStatusInfo(movie).isOutlined ? 'outlined' : 'flat'" 
-                            density="comfortable" 
-                            class="no-focus" 
-                            :class="{
-                                'quick-btn-border': getStatusInfo(movie).isOutlined,
-                                'hover-scale': !getStatusInfo(movie).hasStatus
-                            }"
-                            :ripple="false"
-                            v-tooltip="getStatusInfo(movie).text" 
-                            @click.stop="addToWatchlist(movie, $event)"
-                            :style="{ cursor: getStatusInfo(movie).hasStatus ? 'default' : 'pointer' }"
-                          ></v-btn>
-                      </div>
-                    </v-card>
+                  <div v-if="mediaType === 'all'" class="badge-container pa-1">
+                    <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">Film</v-chip>
                   </div>
-                </div>
-              </v-slide-group-item>
-            </v-slide-group>
-        </div>
+
+                  <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
+                      <v-btn 
+                        icon="mdi-play" 
+                        color="white" 
+                        variant="flat" 
+                        density="comfortable" 
+                        class="elevation-4 no-focus hover-scale" 
+                        :ripple="false" 
+                        v-tooltip="'Détails'" 
+                        @click.stop="$router.push(`/movie/${movie.id}`)"
+                      ></v-btn>
+                      <v-btn 
+                        :icon="getStatusInfo(movie).icon" 
+                        :color="getStatusInfo(movie).btnColor" 
+                        :variant="getStatusInfo(movie).isOutlined ? 'outlined' : 'flat'" 
+                        density="comfortable" 
+                        class="no-focus" 
+                        :class="{
+                            'quick-btn-border': getStatusInfo(movie).isOutlined,
+                            'hover-scale': !getStatusInfo(movie).hasStatus
+                        }"
+                        :ripple="false"
+                        v-tooltip="getStatusInfo(movie).text" 
+                        @click.stop="addToWatchlist(movie, $event)"
+                        :style="{ cursor: getStatusInfo(movie).hasStatus ? 'default' : 'pointer' }"
+                      ></v-btn>
+                  </div>
+                </v-card>
+              </div>
+              <span class="ranking-number">{{ index + 1 }}</span>
+            </div>
+          </v-slide-group-item>
+        </v-slide-group>
       </div>
     </div>
   </v-container>
+  
+  <AuthDialog v-model="dialogAuth" :message="authMessage" />
 </template>
 
 <style scoped>
@@ -579,7 +648,6 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
     }
     
-    /*Désactivation-des-bordures/carrés-gris-natifs-de-Vuetify*/
     .no-focus::after,
     .no-focus:focus-visible::after,
     .no-focus:focus::after {
@@ -596,7 +664,6 @@
         transition: transform 0.2s ease;
     }
     
-    /*Classe-spécifique-pour-le-zoom-au-survol-(seulement-quand-activé)*/
     .hover-scale:hover {
         transform: scale(1.08);
     }
@@ -651,47 +718,6 @@
         overflow: hidden;
     }
 
-    .slider-wrapper {
-        position: relative;
-    }
-    .slider-container {
-        position: relative;
-    }
-
-    .nav-arrow-left, .nav-arrow-right {
-        position: absolute;
-        top: 0;
-        bottom: 30px;
-        width: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 20;
-        opacity: 0;
-        transition: opacity 0.3s ease, background 0.3s ease;
-    }
-    .nav-arrow-left {
-        left: 0;
-        background: linear-gradient(to right, rgba(255,255,255,0.9) 0%, transparent 100%);
-    }
-    .nav-arrow-right {
-        right: 0;
-        background: linear-gradient(to left, rgba(255,255,255,0.9) 0%, transparent 100%);
-    }
-
-    .slider-container:hover .nav-arrow-left, 
-    .slider-container:hover .nav-arrow-right {
-        opacity: 1;
-    }
-
-    .nav-arrow-left .v-icon, .nav-arrow-right .v-icon {
-        color: rgba(0,0,0,0.7) !important;
-        background: rgba(255,255,255,0.5);
-        border-radius: 50%;
-        padding: 5px;
-    }
-
     .full-width-slide {
         margin-left: 30px;
         width: 95.5vw;
@@ -700,6 +726,12 @@
     .section-header {
         width: 95.5vw;
         margin-left: 30px;
+    }
+
+    .navigation-arrows {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 10px;
     }
 
     .section-title {
@@ -726,7 +758,6 @@
         margin-left: 20px !important;
     }
 
-    /*Ajout-de-transform-et-backface-visibility-pour-corriger-le-trait-gris-lié-au-blur*/
     .border-wrapper {
         border: 4px solid #ffffff;
         border-radius: 20px;
@@ -767,6 +798,9 @@
     .quick-btn-border {
         border: 2px solid white !important;
     }
+    .v-btn--variant-flat.quick-btn-border {
+        border: 2px solid transparent !important;
+    }
 
     .movie-card:hover .movie-img {
         transform: scale(1.1) translateZ(0);
@@ -795,7 +829,7 @@
 
     .ranking-number {
         position: absolute;
-        bottom: 15px;
+        bottom: -10px;
         left: -25px;
         font-size: 6rem;
         font-weight: 900;
