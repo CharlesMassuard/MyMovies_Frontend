@@ -30,6 +30,7 @@
     const sliderInTheater = ref(null);
     const sliderRecommendations = ref(null);
 
+    //scroll-manuel-des-carrousels
     const scroll = (sliderRef, direction) => {
         if (!sliderRef || !sliderRef.$el) return;
         const el = sliderRef.$el.querySelector('.v-slide-group__container');
@@ -172,6 +173,7 @@
         fetchGeneralRecommendations(true);
     };
     
+    //determine-le-statut-du-bouton-d-action
     const getStatusInfo = (item) => {
         const type = item.media_type || item.type;
         const libItem = userLibrary.value.find(i => i.id === item.id && i.type === type);
@@ -242,7 +244,8 @@
 </script>
 
 <template>
-  <v-container fluid class="pa-0 pt-6">
+  <!--ajout-d-un-overflow-x-hidden-pour-eviter-tout-scroll-horizontal-imprevu-->
+  <v-container fluid class="pa-0 pt-6" style="overflow-x: hidden;">
     
     <div v-if="loadingData" class="px-8">
         <v-skeleton-loader type="image" height="350" class="mb-10 rounded-xl"></v-skeleton-loader>
@@ -333,7 +336,7 @@
           </v-carousel>
       </div>
 
-      <div class="d-flex justify-end px-8 mb-6 toggle-container">
+      <div class="d-flex justify-end px-4 px-md-8 mb-6 toggle-container">
           <v-btn-toggle
               v-model="mediaType"
               color="#8C52FF"
@@ -364,6 +367,10 @@
             <div class="card-container ma-4">
               <div class="border-wrapper">
                 <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.type}/${item.id}`)">
+                  <v-tooltip
+                    activator="parent"
+                    location="bottom"
+                  >{{ item.data.title || item.data.name }}</v-tooltip>
                   <v-img :src="item.data.posterUrl ? `https://image.tmdb.org/t/p/w500${item.data.posterUrl}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
@@ -417,6 +424,10 @@
             <div class="card-container ma-4">
               <div class="border-wrapper">
                 <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.type}/${item.id}`)">
+                  <v-tooltip
+                    activator="parent"
+                    location="bottom"
+                  >{{ item.title || item.name }}</v-tooltip>
                   <v-img :src="item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
@@ -481,6 +492,10 @@
             <div class="card-container ma-4">
               <div class="border-wrapper">
                 <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.media_type}/${item.id}`)">
+                  <v-tooltip
+                    activator="parent"
+                    location="bottom"
+                  >{{ item.title || item.name }}</v-tooltip>
                   <v-img :src="item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
                   
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
@@ -539,6 +554,10 @@
             <div class="card-container ma-4">
               <div class="border-wrapper">
                 <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/${item.media_type}/${item.id}`)">
+                  <v-tooltip
+                    activator="parent"
+                    location="bottom"
+                  >{{ item.title || item.name }}</v-tooltip>
                   <v-img :src="item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
@@ -597,6 +616,10 @@
             <div class="card-container ma-4">
               <div class="border-wrapper">
                 <v-card class="movie-card" rounded="l" width="150" flat @click="$router.push(`/movie/${movie.id}`)">
+                  <v-tooltip
+                    activator="parent"
+                    location="bottom"
+                  >{{ movie.title || movie.name }}</v-tooltip>
                   <v-img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
@@ -718,36 +741,34 @@
         overflow: hidden;
     }
 
+    /*remplacement-des-vw-par-du-responsive-standard*/
     .full-width-slide {
-        margin-left: 30px;
-        width: 95.5vw;
+        width: 100%;
     }
 
     .section-header {
-        width: 95.5vw;
-        margin-left: 30px;
+        width: 100%;
+        padding: 0 16px;
+        position: relative;
+        border-bottom: 2px solid #ebebeb;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    @media (min-width: 768px) {
+        .section-header {
+            padding: 0 32px;
+        }
     }
 
     .navigation-arrows {
         display: flex;
         gap: 4px;
-        margin-bottom: 10px;
     }
 
     .section-title {
-        position: relative;
-        padding-bottom: 15px;
-        display: inline-flex;
         margin-left: 0 !important;
-    }
-    .section-title::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0; 
-        width: 95.5vw; 
-        height: 2px;
-        background-color: #ebebeb;
+        margin-bottom: 0 !important;
     }
 
     .card-container {
@@ -755,7 +776,7 @@
     }
 
     .v-slide-group-item:first-child .card-container {
-        margin-left: 20px !important;
+        margin-left: 0 !important;
     }
 
     .border-wrapper {
@@ -811,6 +832,17 @@
         opacity: 1;
     }
 
+    /*desactiver-les-quick-actions-sur-mobile-pour-permettre-le-clic-direct*/
+    @media (max-width: 767px) {
+        .quick-actions-overlay {
+            display: none !important;
+        }
+        .movie-card:hover .movie-img {
+            transform: none !important;
+            filter: none !important;
+        }
+    }
+
     .badge-container {
         position: absolute;
         top: 0;
@@ -847,7 +879,12 @@
     }
 
     :deep(.v-slide-group__content) {
-        padding: 0 10px;
+        padding: 0 16px;
+    }
+    @media (min-width: 768px) {
+        :deep(.v-slide-group__content) {
+            padding: 0 32px;
+        }
     }
     :deep(.v-slide-group__prev),
     :deep(.v-slide-group__next) {
