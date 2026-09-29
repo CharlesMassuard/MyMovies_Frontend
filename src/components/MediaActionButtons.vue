@@ -73,7 +73,7 @@ defineEmits(['main-click', 'update-status', 'open-rating', 'open-trailer']);
       @click="$emit('open-trailer')"
     >
       <v-icon start>mdi-play</v-icon>
-      <span class="font-weight-bold">Bande-annonce</span>
+      <span class="font-weight-bold">{{ $t('media.trailer') }}</span>
     </v-btn>
   </div>
 </template>

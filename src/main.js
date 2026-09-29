@@ -5,6 +5,7 @@ import vuetify from './plugins/vuetify'
 import router from './router'
 import axios from 'axios'
 import { useAuthStore } from './stores/auth'
+import i18n from './i18n'
 
 const pinia = createPinia()
 const app = createApp(App)
@@ -12,12 +13,14 @@ const app = createApp(App)
 app.use(pinia)
 app.use(router)
 app.use(vuetify)
+app.use(i18n)
 
 //Création d'une instance Axios vierge sans intercepteurs
 const axiosRefresh = axios.create()
 
 axios.interceptors.request.use((config) => {
     const authStore = useAuthStore()
+    config.headers['Accept-Language'] = i18n.global.locale.value
     if (authStore.token) {
         config.headers.Authorization = `Bearer ${authStore.token}`
     }
@@ -63,6 +66,8 @@ axios.interceptors.response.use(
                 //Utilisation de l'instance vierge pour ne pas envoyer le token expiré
                 const response = await axiosRefresh.post(`${apiPath}/auth/refresh`, {
                     refreshToken: authStore.refreshToken
+                }, {
+                    headers: { 'Accept-Language': i18n.global.locale.value }
                 })
 
                 const newToken = response.data.token

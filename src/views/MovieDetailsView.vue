@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -22,6 +23,7 @@ import SimilarMediaCarousel from '../components/SimilarMediaCarousel.vue';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const router = useRouter();
 const route = useRoute();
+const { t, locale } = useI18n();
 const movieId = computed(() => route.params.id);
 
 const isLoading = ref(true);
@@ -43,44 +45,44 @@ const userRating = ref(0);
 const userComment = ref("");
 const statusFilm = ref("");
 const statusUserMovie = ref("UNDEFINED");
-const textVuAvecDate = ref("Vu");
+const textVuAvecDate = ref(t('common.watched'));
 
 const textButtonStatus = computed(() => ({
   "WATCHED": { text: textVuAvecDate.value, icon: "mdi-check-all" },
-  "WATCHING": { text: "En cours de visionnage", icon: "mdi-play-circle-outline" },
-  "TO_WATCH": { text: "À voir", icon: "mdi-clock-outline" },
-  "UNDEFINED": { text: "Ajouter à ma liste", icon: "mdi-plus" }
+  "WATCHING": { text: t('common.watching'), icon: "mdi-play-circle-outline" },
+  "TO_WATCH": { text: t('common.watch'), icon: "mdi-clock-outline" },
+  "UNDEFINED": { text: t('media.add'), icon: "mdi-plus" }
 }));
 
-const allActions = [
-  { id: 'TO_WATCH', text: 'À voir', icon: 'mdi-clock-outline' },
-  { id: 'WATCHING', text: 'En cours', icon: 'mdi-play-circle-outline' },
-  { id: 'WATCHED', text: 'Vu', icon: 'mdi-check-all' },
-  { id: 'DATE', text: 'Changer la date', icon: 'mdi-calendar' },
-  { id: 'DELETE', text: 'Supprimer de la liste', icon: 'mdi-delete', color: 'error' }
-];
+const allActions = computed(() => [
+  { id: 'TO_WATCH', text: t('common.watch'), icon: 'mdi-clock-outline' },
+  { id: 'WATCHING', text: t('common.watching'), icon: 'mdi-play-circle-outline' },
+  { id: 'WATCHED', text: t('common.watched'), icon: 'mdi-check-all' },
+  { id: 'DATE', text: t('media.changeDate'), icon: 'mdi-calendar' },
+  { id: 'DELETE', text: t('media.deleteFromList'), icon: 'mdi-delete', color: 'error' }
+]);
 
 const itemsStatus = computed(() => {
   if (statusFilm.value !== "Released") {
-    return allActions.filter(i => ['DELETE'].includes(i.id));
+    return allActions.value.filter(i => ['DELETE'].includes(i.id));
   }
   switch (statusUserMovie.value) {
-    case 'TO_WATCH': return allActions.filter(i => ['WATCHING', 'WATCHED', 'DELETE'].includes(i.id));
-    case 'WATCHING': return allActions.filter(i => ['TO_WATCH', 'WATCHED', 'DELETE'].includes(i.id));
-    case 'WATCHED': return allActions.filter(i => ['TO_WATCH', 'WATCHING', 'DATE', 'DELETE'].includes(i.id));
+    case 'TO_WATCH': return allActions.value.filter(i => ['WATCHING', 'WATCHED', 'DELETE'].includes(i.id));
+    case 'WATCHING': return allActions.value.filter(i => ['TO_WATCH', 'WATCHED', 'DELETE'].includes(i.id));
+    case 'WATCHED': return allActions.value.filter(i => ['TO_WATCH', 'WATCHING', 'DATE', 'DELETE'].includes(i.id));
     default: return [];
   }
 });
 
 const formatCurrency = (value) => {
   if (!value || value === 0) return null;
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat(locale.value, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
 };
 
 const handleAuthError = (error) => {
   if (error.response && error.response.status === 403) {
     localStorage.removeItem('user_token');
-    authMessage.value = "Votre session a expiré. Veuillez vous reconnecter.";
+    authMessage.value = t('media.sessionExpired');
     dialogAuth.value = true;
     return true;
   }
@@ -109,7 +111,7 @@ const fetchDetailsMovies = async () => {
       const minutes = runtimeMinutes % 60;
       movieDetails.value.runtimeFormatted = `${hours}h ${minutes.toString().padStart(2, '0')}min`;
     } else {
-      movieDetails.value.runtimeFormatted = "Durée inconnue";
+      movieDetails.value.runtimeFormatted = t('common.durationUnknown');
     }
   } catch (error) { console.error('Error fetching movie details:', error); }
 };
@@ -157,9 +159,9 @@ const fetchStatusUserMovie = async () => {
         const d = new Date(watchedResponse.data);
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
-        textVuAvecDate.value = `Vu le ${day}/${month}/${d.getFullYear()}`;
+        textVuAvecDate.value = `${t('media.watchedOn')} ${day}/${month}/${d.getFullYear()}`;
       } else {
-        textVuAvecDate.value = "Vu il y a longtemps";
+        textVuAvecDate.value = t('media.watchedLongAgo');
       }
     }
   } catch (error) { handleAuthError(error); }
@@ -182,7 +184,7 @@ const fetchRating = async () => {
   }
 };
 
-const displayRating = computed(() => userRating.value > 0 ? `${userRating.value}/10` : 'Noter');
+const displayRating = computed(() => userRating.value > 0 ? `${userRating.value}/10` : t('common.rating'));
 
 const checkAuth = (message) => {
   if (!localStorage.getItem('user_token')) {
@@ -194,7 +196,7 @@ const checkAuth = (message) => {
 };
 
 const handleMainButtonClick = () => {
-  if (!checkAuth("Connectez-vous pour ajouter ce film à votre liste.")) return;
+  if (!checkAuth(t('auth.mustLogin'))) return;
   if (statusUserMovie.value === "UNDEFINED") {
     axios.post(`${API_BASE_URL}/user/movies/to-watch/${movieId.value}`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('user_token')}` } })
       .then(() => statusUserMovie.value = "TO_WATCH").catch(handleAuthError);
@@ -202,7 +204,7 @@ const handleMainButtonClick = () => {
 };
 
 const updateStatus = async (newStatus) => {
-  if (!checkAuth("Connectez-vous pour modifier le statut de ce film.")) return;
+  if (!checkAuth(t('auth.mustLogin'))) return;
   if (newStatus === 'DELETE') return (dialogConfirmation.value = true);
   if (newStatus === 'DATE') return (dialogDate.value = true);
   
@@ -212,7 +214,7 @@ const updateStatus = async (newStatus) => {
     if (newStatus === 'WATCHED') {
       const today = new Date();
       payload.watchedAt = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      textVuAvecDate.value = `Vu le ${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+      textVuAvecDate.value = `${t('media.watchedOn')} ${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
     }
     await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, payload, { headers: { Authorization: `Bearer ${token}` } });
     statusUserMovie.value = newStatus;
@@ -232,10 +234,10 @@ const confirmDelete = async () => {
 const handleDateConfirm = async (dateData) => {
   try {
     let formattedDate = "1970-01-01";
-    let dateText = "Vu il y a longtemps";
+    let dateText = t('media.watchedLongAgo');
     if (dateData !== 'long-time-ago') {
       formattedDate = `${dateData.getFullYear()}-${String(dateData.getMonth() + 1).padStart(2, '0')}-${String(dateData.getDate()).padStart(2, '0')}`;
-      dateText = `Vu le ${String(dateData.getDate()).padStart(2, '0')}/${String(dateData.getMonth() + 1).padStart(2, '0')}/${dateData.getFullYear()}`;
+      dateText = `${t('media.watchedOn')} ${String(dateData.getDate()).padStart(2, '0')}/${String(dateData.getMonth() + 1).padStart(2, '0')}/${dateData.getFullYear()}`;
     }
     await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, { status: "WATCHED", watchedAt: formattedDate }, { headers: { Authorization: `Bearer ${localStorage.getItem('user_token')}` } });
     textVuAvecDate.value = dateText;
@@ -286,16 +288,16 @@ watch(() => movieId.value, () => {
         <div class="movie-header">
           <div class="d-flex align-center flex-wrap ga-2 mb-2">
             <v-chip color="grey-darken-3" variant="flat" size="small" class="text-white font-weight-bold">
-              <v-icon start size="small" color="white">mdi-movie-open</v-icon>Film
+              <v-icon start size="small" color="white">mdi-movie-open</v-icon>{{ $t('common.movie') }}
             </v-chip>
-            <v-chip v-if="statusFilm === 'Released'" color="success" variant="flat" size="small" class="font-weight-bold">Sorti</v-chip>
-            <v-chip v-else-if="statusFilm" color="#8C52FF" variant="flat" size="small" class="font-weight-bold">À venir</v-chip>
+            <v-chip v-if="statusFilm === 'Released'" color="success" variant="flat" size="small" class="font-weight-bold">{{ $t('media.released') }}</v-chip>
+            <v-chip v-else-if="statusFilm" color="#8C52FF" variant="flat" size="small" class="font-weight-bold">{{ $t('media.upcoming') }}</v-chip>
           </div>
 
           <h1 class="text-h3 font-weight-bold">{{ movieDetails.title }}</h1>
           
           <p class="subtitle-info d-flex align-center flex-wrap mt-2">
-            <span>{{ movieDetails.release_year || 'Date inconnue' }}</span><span class="mx-2">•</span>
+            <span>{{ movieDetails.release_year || $t('common.unknownDate') }}</span><span class="mx-2">•</span>
             <span>{{ movieDetails.release_date_formatted }}</span><span class="mx-2">•</span>
             <span>{{ allGenres }}</span><span class="mx-2">•</span>
             <span>{{ movieDetails.runtimeFormatted }}</span>
@@ -303,13 +305,13 @@ watch(() => movieId.value, () => {
 
           <div class="d-flex align-center flex-wrap mt-3 ga-4">
             <div v-if="movieDetails.budget || movieDetails.revenue" class="d-flex align-center flex-wrap ga-3 text-caption text-grey-lighten-2">
-              <span v-if="movieDetails.budget">Budget : <strong class="text-white">{{ formatCurrency(movieDetails.budget) }}</strong></span>
+              <span v-if="movieDetails.budget">{{ $t('common.budget') }} : <strong class="text-white">{{ formatCurrency(movieDetails.budget) }}</strong></span>
               <span v-if="movieDetails.budget && movieDetails.revenue">|</span>
-              <span v-if="movieDetails.revenue">Revenus : <strong class="text-white">{{ formatCurrency(movieDetails.revenue) }}</strong></span>
+              <span v-if="movieDetails.revenue">{{ $t('common.revenue') }} : <strong class="text-white">{{ formatCurrency(movieDetails.revenue) }}</strong></span>
             </div>
             
             <v-btn v-if="movieDetails.homepage" :href="movieDetails.homepage" target="_blank" variant="outlined" size="small" color="white" prepend-icon="mdi-open-in-new" rounded="xl" class="ml-md-auto">
-              Site officiel
+              {{ $t('common.officialWebsite') }}
             </v-btn>
           </div>
 
@@ -327,17 +329,17 @@ watch(() => movieId.value, () => {
           :trailerKey="trailerKey"
           @main-click="handleMainButtonClick"
           @update-status="updateStatus"
-          @open-rating="checkAuth('Connectez-vous pour noter ce film.') ? (dialogNote = true) : null"
+          @open-rating="checkAuth($t('media.authRateMovie')) ? (dialogNote = true) : null"
           @open-trailer="dialogTrailer = true"
         />
 
         <div class="synopsis-section">
           <p v-if="movieDetails.tagline" class="tagline mb-4 text-grey-lighten-1 italic"><i>{{ movieDetails.tagline}}</i></p>
-          <h3 v-if="movieDetails.overview" class="text-h6 font-weight-bold mb-2">Synopsis</h3>
+          <h3 v-if="movieDetails.overview" class="text-h6 font-weight-bold mb-2">{{ $t('common.synopsis') }}</h3>
           <p v-if="movieDetails.overview" class="overview-text">{{ movieDetails.overview }}</p>
           
           <div v-if="directors.length > 0" class="director-info mt-6">
-            <h3 class="text-h6 font-weight-bold mb-2">{{ directors.length === 1 ? 'Réalisateur' : 'Réalisateurs' }}</h3>
+            <h3 class="text-h6 font-weight-bold mb-2">{{ directors.length === 1 ? $t('media.creator') : $t('media.creators') }}</h3>
             <p class="text-body-2">{{ directors.map(d => d.name).join(', ') }}</p>
           </div>
         </div>
@@ -348,9 +350,9 @@ watch(() => movieId.value, () => {
     </div>
   </div>
 
-  <ConfirmationDialog v-model="dialogConfirmation" title="Supprimer le film de votre liste" message="Êtes-vous sûr de vouloir supprimer ce film ?" confirm-text="Supprimer" cancel-text="Annuler" @confirm="confirmDelete" />
-  <DateDialog v-model="dialogDate" title="Quand avez-vous vu ce film ?" @confirm="handleDateConfirm" />
-  <RatingDialog v-model="dialogNote" title="Noter ce film" :initial-rating="userRating" :initial-comment="userComment" @save="saveRating" />
+  <ConfirmationDialog v-model="dialogConfirmation" :title="$t('media.deleteMovie')" :message="$t('media.deleteQuestionMovie')" :confirm-text="$t('common.delete')" :cancel-text="$t('common.cancel')" @confirm="confirmDelete" />
+  <DateDialog v-model="dialogDate" :title="$t('media.watchedOn') + ' ?'" @confirm="handleDateConfirm" />
+  <RatingDialog v-model="dialogNote" :title="$t('media.rateMovie')" :placeholder="$t('media.reviewMovie')" :initial-rating="userRating" :initial-comment="userComment" @save="saveRating" />
   <AuthDialog v-model="dialogAuth" :message="authMessage" />
   <TrailerDialog v-model="dialogTrailer" :videoKey="trailerKey" />
 </template>

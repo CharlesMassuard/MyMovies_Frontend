@@ -1,11 +1,13 @@
 <script setup>
     import { ref, computed, onMounted, watch, nextTick } from 'vue';
+    import { useI18n } from 'vue-i18n';
     import { useRouter } from 'vue-router';
     import axios from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
     import AuthDialog from '../components/AuthDialog.vue';
 
     const router = useRouter();
+    const { t } = useI18n();
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
     const mediaType = ref('all');
@@ -179,18 +181,18 @@
         const libItem = userLibrary.value.find(i => i.id === item.id && i.type === type);
         
         if (!libItem) {
-            return { icon: 'mdi-plus', text: 'Ajouter à ma liste', btnColor: 'white', isOutlined: true, hasStatus: false };
+            return { icon: 'mdi-plus', text: t('home.added'), btnColor: 'white', isOutlined: true, hasStatus: false };
         }
         
         switch(libItem.status) {
             case 'TO_WATCH': 
-                return { icon: 'mdi-clock-outline', text: 'À voir', btnColor: 'white', isOutlined: false, hasStatus: true };
+                return { icon: 'mdi-clock-outline', text: t('home.toWatch'), btnColor: 'white', isOutlined: false, hasStatus: true };
             case 'WATCHING': 
-                return { icon: 'mdi-play-circle-outline', text: 'En cours', btnColor: 'info', isOutlined: false, hasStatus: true };
+                return { icon: 'mdi-play-circle-outline', text: t('home.watching'), btnColor: 'info', isOutlined: false, hasStatus: true };
             case 'WATCHED': 
-                return { icon: 'mdi-check-all', text: 'Vu', btnColor: 'success', isOutlined: false, hasStatus: true };
+                return { icon: 'mdi-check-all', text: t('home.watched'), btnColor: 'success', isOutlined: false, hasStatus: true };
             default: 
-                return { icon: 'mdi-plus', text: 'Ajouter à ma liste', btnColor: 'white', isOutlined: true, hasStatus: false };
+                return { icon: 'mdi-plus', text: t('home.added'), btnColor: 'white', isOutlined: true, hasStatus: false };
         }
     };
     
@@ -211,7 +213,7 @@
         
         if (existing) return;
 
-        if (!checkAuth("Connectez-vous pour ajouter à votre liste.")) return;
+        if (!checkAuth(t('auth.mustLogin'))) return;
         
         const route = type === 'serie' ? `/user/series/to-watch/${item.id}` : `/user/movies/to-watch/${item.id}`;
         
@@ -285,10 +287,10 @@
                       <div class="spotlight-glass-panel text-white pa-6 rounded-xl elevation-10">
                           <div class="d-flex align-center mb-3 ga-3">
                               <div class="a-la-une-tag rounded-pill px-3 py-1">
-                                  À LA UNE
+                                  {{ $t('home.featured') }}
                               </div>
                               <v-chip size="small" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" variant="flat" class="font-weight-bold text-white shadow-badge">
-                                  {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                                  {{ item.media_type === 'serie' ? $t('common.series') : $t('common.movie') }}
                               </v-chip>
                               <v-chip size="small" color="white" variant="flat" class="font-weight-bold text-black shadow-badge">
                                 <v-icon start icon="mdi-star" size="14" color="amber-darken-2"></v-icon>
@@ -301,7 +303,7 @@
                           </h2>
                           
                           <p class="text-body-2 mb-4 text-truncate-3 opacity-90 d-none d-sm-box" style="max-width: 450px;">
-                              {{ item.overview || 'Aucune description disponible pour le moment.' }}
+                              {{ item.overview || $t('common.noDescription') }}
                           </p>
                           
                           <div class="d-flex ga-3 mt-4">
@@ -313,7 +315,7 @@
                                 :ripple="false"
                                 @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
                               >
-                                  <v-icon start>mdi-play</v-icon> Détails
+                                  <v-icon start>mdi-play</v-icon> {{ $t('common.details') }}
                               </v-btn>
                               <v-btn 
                                 :color="getStatusInfo(item).btnColor" 
@@ -346,16 +348,16 @@
               density="compact"
               class="bg-white filter-toggle"
           >
-              <v-btn value="all" class="text-none font-weight-bold px-6">Général</v-btn>
-              <v-btn value="movie" class="text-none font-weight-bold px-6">Films</v-btn>
-              <v-btn value="serie" class="text-none font-weight-bold px-6">Séries</v-btn>
+              <v-btn value="all" class="text-none font-weight-bold px-6">{{ $t('home.general') }}</v-btn>
+              <v-btn value="movie" class="text-none font-weight-bold px-6">{{ $t('common.movies') }}</v-btn>
+              <v-btn value="serie" class="text-none font-weight-bold px-6">{{ $t('common.seriesPlural') }}</v-btn>
           </v-btn-toggle>
       </div>
 
       <!--Section-En-Cours-et-A-Noter-->
       <div v-if="actionItems.length > 0" class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
-          <h1 class="text-h5 font-weight-bold mb-2 section-title">Votre suivi</h1>
+          <h1 class="text-h5 font-weight-bold mb-2 section-title">{{ $t('home.followUp') }}</h1>
           <div class="navigation-arrows">
             <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderActions, 'prev')"></v-btn>
             <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderActions, 'next')"></v-btn>
@@ -375,14 +377,14 @@
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
                     <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.type === 'serie' ? 'Série' : 'Film' }}
+                      {{ item.type === 'serie' ? $t('common.series') : $t('common.movie') }}
                     </v-chip>
                   </div>
 
                   <div class="badge-container-bottom pa-1">
                     <v-chip size="x-small" :color="item.status === 'WATCHING' ? 'info' : 'success'" variant="flat" class="text-white font-weight-bold shadow-badge">
                       <v-icon start :icon="item.status === 'WATCHING' ? 'mdi-play-circle-outline' : 'mdi-star-outline'" size="12"></v-icon>
-                      {{ item.status === 'WATCHING' ? 'En cours' : 'À noter' }}
+                      {{ item.status === 'WATCHING' ? $t('home.watching') : $t('common.rating') }}
                     </v-chip>
                   </div>
 
@@ -394,7 +396,7 @@
                         density="comfortable" 
                         class="elevation-4 no-focus hover-scale" 
                         :ripple="false" 
-                        v-tooltip="'Continuer'" 
+                        v-tooltip="$t('common.details')"
                         @click.stop="$router.push(`/${item.type}/${item.id}`)"
                       ></v-btn>
                   </div>
@@ -410,7 +412,7 @@
         <div class="d-flex align-center justify-space-between section-header">
           <h1 class="text-h5 font-weight-bold mb-2 section-title d-flex align-center">
             <v-icon color="#8C52FF" class="mr-2" size="28">mdi-star-shooting</v-icon>
-            Recommandé pour vous
+            {{ $t('home.recommended') }}
             <v-btn icon="mdi-refresh" variant="text" size="small" color="#8C52FF" class="ml-2 no-focus hover-scale" :ripple="false" :loading="loadingRecs" @click="refreshRecommendations"></v-btn>
           </h1>
           <div class="navigation-arrows">
@@ -432,7 +434,7 @@
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
                     <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.type === 'serie' ? 'Série' : 'Film' }}
+                      {{ item.type === 'serie' ? $t('common.series') : $t('common.movie') }}
                     </v-chip>
                   </div>
 
@@ -451,7 +453,7 @@
                         density="comfortable" 
                         class="elevation-4 no-focus hover-scale" 
                         :ripple="false" 
-                        v-tooltip="'Détails'" 
+                        v-tooltip="$t('common.details')"
                         @click.stop="$router.push(`/${item.type}/${item.id}`)"
                       ></v-btn>
                       <v-btn 
@@ -480,7 +482,7 @@
       <!--Section-Tendances-->
       <div class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
-          <h1 class="text-h5 font-weight-bold mb-2 section-title">Tendances du jour</h1>
+          <h1 class="text-h5 font-weight-bold mb-2 section-title">{{ $t('home.trending') }}</h1>
           <div class="navigation-arrows">
             <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderTrending, 'prev')"></v-btn>
             <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderTrending, 'next')"></v-btn>
@@ -500,7 +502,7 @@
                   
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
                     <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                      {{ item.media_type === 'serie' ? $t('common.series') : $t('common.movie') }}
                     </v-chip>
                   </div>
 
@@ -512,7 +514,7 @@
                         density="comfortable" 
                         class="elevation-4 no-focus hover-scale" 
                         :ripple="false" 
-                        v-tooltip="'Détails'" 
+                        v-tooltip="$t('common.details')"
                         @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
                       ></v-btn>
                       <v-btn 
@@ -542,7 +544,7 @@
       <!--Section-Populaires-->
       <div class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
-          <h1 class="text-h5 font-weight-bold mb-2 section-title">Populaires</h1>
+          <h1 class="text-h5 font-weight-bold mb-2 section-title">{{ $t('home.popular') }}</h1>
           <div class="navigation-arrows">
             <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderPopular, 'prev')"></v-btn>
             <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderPopular, 'next')"></v-btn>
@@ -562,7 +564,7 @@
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
                     <v-chip size="x-small" variant="flat" :color="item.media_type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                      {{ item.media_type === 'serie' ? $t('common.series') : $t('common.movie') }}
                     </v-chip>
                   </div>
 
@@ -574,7 +576,7 @@
                         density="comfortable" 
                         class="elevation-4 no-focus hover-scale" 
                         :ripple="false" 
-                        v-tooltip="'Détails'" 
+                        v-tooltip="$t('common.details')"
                         @click.stop="$router.push(`/${item.media_type}/${item.id}`)"
                       ></v-btn>
                       <v-btn 
@@ -604,7 +606,7 @@
       <!--Section-En-Salles-->
       <div v-if="mediaType === 'movie' || mediaType === 'all'" class="pb-8">
         <div class="d-flex align-center justify-space-between section-header">
-          <h1 class="text-h5 font-weight-bold mb-2 section-title" title="Films sortis depuis 40 jours">En Salles</h1>
+          <h1 class="text-h5 font-weight-bold mb-2 section-title" :title="$t('home.releasedRecently')">{{ $t('home.theaters') }}</h1>
           <div class="navigation-arrows">
             <v-btn icon="mdi-chevron-left" variant="text" size="small" @click="scroll(sliderInTheater, 'prev')"></v-btn>
             <v-btn icon="mdi-chevron-right" variant="text" size="small" class="mr-n2" @click="scroll(sliderInTheater, 'next')"></v-btn>
@@ -623,7 +625,7 @@
                   <v-img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : noPoster" cover aspect-ratio="2/3" class="movie-img"></v-img>
 
                   <div v-if="mediaType === 'all'" class="badge-container pa-1">
-                    <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">Film</v-chip>
+                    <v-chip size="x-small" variant="flat" color="grey-darken-3" class="text-white font-weight-bold shadow-badge">{{ $t('common.movie') }}</v-chip>
                   </div>
 
                   <div class="quick-actions-overlay d-flex flex-column align-center justify-center ga-3">
@@ -634,7 +636,7 @@
                         density="comfortable" 
                         class="elevation-4 no-focus hover-scale" 
                         :ripple="false" 
-                        v-tooltip="'Détails'" 
+                        v-tooltip="$t('common.details')"
                         @click.stop="$router.push(`/movie/${movie.id}`)"
                       ></v-btn>
                       <v-btn 

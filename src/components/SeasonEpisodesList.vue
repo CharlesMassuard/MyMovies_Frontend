@@ -1,5 +1,8 @@
 <script setup>
 import noPoster from '../assets/noPosterAvailable.webp';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 defineProps({
   seasonInfo: Object,
@@ -9,7 +12,7 @@ defineProps({
 defineEmits(['close']);
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'Date inconnue';
+  if (!dateString) return t('common.unknownDate');
   const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
 };
@@ -20,7 +23,7 @@ const formatEpisodeNumber = (season, episode) => {
 
 const translateEpisodeType = (type) => {
   if (!type || type === 'standard') return null;
-  const types = { 'finale': 'Final de saison', 'premiere': 'Début de saison', 'mid_season': 'Mi-saison', 'series_finale': 'Final de la série', 'series_premiere': 'Pilote' };
+  const types = { 'finale': t('episodes.seasonFinale'), 'premiere': t('episodes.seasonPremiere'), 'mid_season': t('episodes.midSeason'), 'series_finale': t('episodes.seriesFinale'), 'series_premiere': t('episodes.pilot') };
   return types[type.toLowerCase()] || type;
 };
 </script>
@@ -36,7 +39,7 @@ const translateEpisodeType = (type) => {
       <div v-if="seasonInfo && !loading" class="mt-4 bg-grey-lighten-4 rounded-xl pa-6 border">
         <div class="d-flex justify-space-between align-center mb-6">
           <h3 class="text-h5 font-weight-bold">
-            {{ seasonInfo.name }} <span class="text-body-1 text-grey-darken-1">({{ seasonInfo.episodes?.length }} épisodes)</span>
+            {{ seasonInfo.name }} <span class="text-body-1 text-grey-darken-1">({{ seasonInfo.episodes?.length }} {{ $t('media.episodes') }})</span>
           </h3>
           <v-btn icon="mdi-close" variant="text" @click="$emit('close')"></v-btn>
         </div>
@@ -68,7 +71,7 @@ const translateEpisodeType = (type) => {
                   </div>
                 </div>
                 <p class="text-body-2 text-grey-darken-3 mb-3 flex-grow-1 text-justify">
-                  {{ episode.overview || 'Aucun résumé disponible pour cet épisode.' }}
+                  {{ episode.overview || $t('episodes.noOverview') }}
                 </p>
                 <div class="d-flex align-center mt-auto" v-if="episode.vote_average">
                   <v-icon color="amber" size="small" class="mr-1">mdi-star</v-icon>

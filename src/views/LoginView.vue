@@ -3,8 +3,10 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
+import { useI18n } from 'vue-i18n';
 
 const authStore = useAuthStore();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const isLogin = ref(true);  
@@ -17,12 +19,12 @@ const emailField = ref(null);
 const passwordField = ref(null);
 
 const emailRules = [
-  v => !!v || 'Email requis',
-  v => /.+@.+\..+/.test(v) || 'L\'email doit être valide'
+  v => !!v || t('auth.emailRequired'),
+  v => /.+@.+\..+/.test(v) || t('auth.emailInvalid')
 ];
 const passwordRules = [
-  v => !!v || 'Mot de passe requis',
-  v => v.length >= 6 || 'Le mot de passe doit contenir au moins 6 caractères'
+  v => !!v || t('auth.passwordRequired'),
+  v => v.length >= 6 || t('auth.passwordLength')
 ];
 
 onMounted(() => {
@@ -49,21 +51,21 @@ const handleSubmit = async () => {
     let pwd = password.value;
 
     if(!mail || !pwd) {
-        errorMessage.value = 'L\'email et le mot de passe sont requis.';
+        errorMessage.value = t('auth.emailAndPasswordRequired');
         return;
     }
     if(!isLogin.value && !username.value) {
-        errorMessage.value = 'Le nom d\'utilisateur est requis pour l\'inscription.';
+        errorMessage.value = t('auth.usernameRequired');
         return;
     }
 
     const emailPattern = /.+@.+\..+/;
     if (!emailPattern.test(mail)) {
-        errorMessage.value = "L'adresse email n'est pas valide.";
+        errorMessage.value = t('auth.invalidEmail');
         return;
     }
     if (pwd.length < 6) {
-        errorMessage.value = "Le mot de passe doit contenir au moins 6 caractères.";
+        errorMessage.value = t('auth.passwordLength');
         return;
     }
 
@@ -89,9 +91,9 @@ const handleSubmit = async () => {
         router.push('/');
     } catch (error) {
         if (error.response) {
-            errorMessage.value = error.response.data.message || 'Une erreur est survenue lors de l\'authentification.';
+            errorMessage.value = error.response.data.message || t('auth.generic');
         } else {
-            errorMessage.value = 'Une erreur est survenue. Veuillez réessayer plus tard.';
+            errorMessage.value = t('auth.generic');
         }
     } finally {
         loading.value = false;
@@ -106,7 +108,7 @@ const handleSubmit = async () => {
         <v-alert
             v-if="errorMessage"
             type="error"
-            title="Erreur d'authentification"
+            :title="$t('auth.authError')"
             :text="errorMessage"
             variant="tonal"
             closable
@@ -117,7 +119,7 @@ const handleSubmit = async () => {
         <v-card class="elevation-12" :loading="loading" rounded="lg">
         <v-toolbar color="#8C52FF" dark flat>
             <v-toolbar-title>
-            {{ isLogin ? 'Connexion' : 'Inscription' }}
+            {{ isLogin ? $t('auth.login') : $t('auth.register') }}
             </v-toolbar-title>
         </v-toolbar>
         
@@ -126,7 +128,7 @@ const handleSubmit = async () => {
             <v-text-field
                 v-if="!isLogin"
                 v-model="username"
-                label="Nom d'utilisateur"
+                :label="$t('auth.username')"
                 prepend-icon="mdi-account"
                 type="text"
                 ref="usernameField"
@@ -136,7 +138,7 @@ const handleSubmit = async () => {
 
             <v-text-field
                 v-model="email"
-                label="Email"
+                :label="$t('auth.email')"
                 prepend-icon="mdi-email"
                 type="email"
                 :rules="emailRules"
@@ -147,7 +149,7 @@ const handleSubmit = async () => {
 
             <v-text-field
                 v-model="password"
-                label="Mot de passe"
+                :label="$t('auth.password')"
                 prepend-icon="mdi-lock"
                 type="password"
                 :rules="passwordRules"
@@ -164,7 +166,7 @@ const handleSubmit = async () => {
                 :loading="loading"
                 :disabled="email === '' || password === '' || (!isLogin && username === '')"
                 >
-                {{ isLogin ? 'Se connecter' : "S'inscrire" }}
+                {{ isLogin ? $t('auth.submitLogin') : $t('auth.submitRegister') }}
                 </v-btn>
                 
                 <v-btn
@@ -173,7 +175,7 @@ const handleSubmit = async () => {
                 type="button"
                 @click="isLogin = !isLogin"
                 >
-                {{ isLogin ? "Pas de compte ? Créer un compte" : "Déjà un compte ? Se connecter" }}
+                {{ isLogin ? $t('auth.switchToRegister') : $t('auth.switchToLogin') }}
                 </v-btn>
             </v-card-actions>
             </v-form>

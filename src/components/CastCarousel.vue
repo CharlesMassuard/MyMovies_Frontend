@@ -12,7 +12,7 @@ const goToPerson = (id) => router.push(`/person/${id}`);
 
 <template>
   <v-container class="mt-6 mb-6" v-if="cast?.length">
-    <h3 class="text-h5 font-weight-bold mb-6">Têtes d'affiche</h3>
+    <h3 class="text-h5 font-weight-bold mb-6">{{ $t('media.cast') }}</h3>
     <v-row class="flex-nowrap overflow-x-auto pb-4">
       <v-col v-for="actor in cast" :key="actor.id" cols="6" sm="4" md="2" class="flex-shrink-0">
         <v-card 

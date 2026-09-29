@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -8,11 +9,12 @@ const props = defineProps({
   initialComment: String,
   placeholder: {
     type: String,
-    default: "Écrivez ce que vous voulez retenir..."
+    default: ''
   }
 });
 
 const emit = defineEmits(['update:modelValue', 'save']);
+const { t } = useI18n();
 
 const editRating = ref(0);
 const editComment = ref("");
@@ -31,7 +33,7 @@ const closeDialog = () => {
 const saveRating = () => {
   if (editRating.value < 1 || editRating.value > 10) return;
   if (editComment.value.length > 500) {
-    alert('Le commentaire ne doit pas dépasser 500 caractères.');
+    alert(t('media.commentLength'));
     return;
   }
   emit('save', { rating: editRating.value, comment: editComment.value });
@@ -56,7 +58,7 @@ const saveRating = () => {
 
       <v-textarea
         v-model="editComment"
-        :placeholder="placeholder"
+        :placeholder="placeholder || $t('media.defaultReview')"
         variant="outlined"
         rounded="lg"
         auto-grow
@@ -104,7 +106,7 @@ const saveRating = () => {
         class="text-none font-weight-bold text-white elevation-0"
         @click="saveRating"
       >
-        Sauvegarder
+        {{ $t('common.validate') }}
       </v-btn>
     </v-card>
   </v-dialog>

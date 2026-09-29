@@ -6,7 +6,7 @@ defineProps({
 
 <template>
   <div v-if="providers.length > 0" class="d-flex align-center flex-wrap mt-4 ga-3">
-    <span class="text-caption text-grey-lighten-2">Disponible en streaming :</span>
+    <span class="text-caption text-grey-lighten-2">{{ $t('common.streaming') }}</span>
     <div 
       v-for="provider in providers" 
       :key="provider.provider_id" 

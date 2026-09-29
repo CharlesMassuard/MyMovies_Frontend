@@ -1,10 +1,12 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
+    import { useI18n } from 'vue-i18n';
     import { useRouter } from 'vue-router';
     import axios from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
 
     const router = useRouter();
+    const { t, locale } = useI18n();
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const userLibrary = ref([]);
@@ -15,14 +17,14 @@
     const currentSort = ref('viewed_desc');
 
     //Options-de-tri
-    const sortOptions = [
-        { title: 'Date de visionnage', value: 'viewed_desc' },
-        { title: 'Activité récente', value: 'recent_desc' },
-        { title: 'Date d\'ajout', value: 'added_desc' },
-        { title: 'Note (Décroissant)', value: 'rating_desc' },
-        { title: 'Note (Croissant)', value: 'rating_asc' },
-        { title: 'Alphabétique (A-Z)', value: 'alpha_asc' }
-    ];
+    const sortOptions = computed(() => [
+        { title: t('library.dateWatched'), value: 'viewed_desc' },
+        { title: t('library.recentActivity'), value: 'recent_desc' },
+        { title: t('library.dateAdded'), value: 'added_desc' },
+        { title: t('library.ratingDesc'), value: 'rating_desc' },
+        { title: t('library.ratingAsc'), value: 'rating_asc' },
+        { title: t('library.alphabetical'), value: 'alpha_asc' }
+    ]);
 
     const fetchUserLibrary = async () => {
       try {
@@ -130,9 +132,9 @@
         
         const formatMonthYear = (timestamp) => {
             if (timestamp === Infinity) return null; //Sera-placé-dans-la-section-sans-titre-en-haut
-            if (timestamp === 0) return 'Il y a longtemps'; //Sera-placé-dans-la-section-en-bas
+            if (timestamp === 0) return t('library.longAgo'); //Sera-placé-dans-la-section-en-bas
             const date = new Date(timestamp);
-            const month = date.toLocaleString('fr-FR', { month: 'long' });
+            const month = date.toLocaleString(locale.value, { month: 'long' });
             const year = date.getFullYear();
             return month.charAt(0).toUpperCase() + month.slice(1) + ' ' + year;
         };
@@ -170,7 +172,7 @@
     
     <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between mb-8 section-header ga-4">
       <div class="d-flex align-baseline">
-        <h1 class="text-h5 font-weight-bold section-title">Ma Bibliothèque</h1>
+        <h1 class="text-h5 font-weight-bold section-title">{{ $t('library.title') }}</h1>
         <span class="text-grey ml-2 text-subtitle-1 font-weight-medium" v-if="filteredLibrary.length > 0">
           ({{ filteredLibrary.length }})
         </span>
@@ -186,9 +188,9 @@
         density="compact"
         class="bg-white w-100 w-md-auto d-flex"
       >
-        <v-btn value="all" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">Général</v-btn>
-        <v-btn value="movie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">Films</v-btn>
-        <v-btn value="serie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">Séries</v-btn>
+        <v-btn value="all" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">{{ $t('library.all') }}</v-btn>
+        <v-btn value="movie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">{{ $t('library.movies') }}</v-btn>
+        <v-btn value="serie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">{{ $t('library.series') }}</v-btn>
       </v-btn-toggle>
     </div>
 
@@ -200,15 +202,15 @@
         selected-class="selected-chip text-white"
         column
       >
-        <v-chip value="all" variant="outlined" class="font-weight-bold px-4">Tous</v-chip>
+        <v-chip value="all" variant="outlined" class="font-weight-bold px-4">{{ $t('library.allStatus') }}</v-chip>
         <v-chip value="TO_WATCH" variant="outlined" class="font-weight-bold px-4">
-          <v-icon start icon="mdi-clock-outline" size="small"></v-icon>À voir
+          <v-icon start icon="mdi-clock-outline" size="small"></v-icon>{{ $t('common.watch') }}
         </v-chip>
         <v-chip value="WATCHING" variant="outlined" class="font-weight-bold px-4">
-          <v-icon start icon="mdi-play-circle-outline" size="small"></v-icon>En cours
+          <v-icon start icon="mdi-play-circle-outline" size="small"></v-icon>{{ $t('common.watching') }}
         </v-chip>
         <v-chip value="WATCHED" variant="outlined" class="font-weight-bold px-4">
-          <v-icon start icon="mdi-check-all" size="small"></v-icon>Vus
+          <v-icon start icon="mdi-check-all" size="small"></v-icon>{{ $t('common.watched') }}
         </v-chip>
       </v-chip-group>
 
@@ -261,7 +263,7 @@
                   <!--Badge-Supérieur-->
                   <div v-if="currentType === 'all'" class="badge-container-top">
                     <v-chip size="x-small" variant="flat" :color="item.type === 'serie' ? '#8C52FF' : 'grey-darken-3'" class="text-white font-weight-bold shadow-badge">
-                      {{ item.type === 'serie' ? 'Série' : 'Film' }}
+                      {{ item.type === 'serie' ? $t('common.series') : $t('common.movie') }}
                     </v-chip>
                   </div>
 
@@ -269,13 +271,13 @@
                   <div class="badge-container-bottom">
                     <v-chip v-if="item.status === 'WATCHED'" size="x-small" color="amber-darken-4" variant="flat" class="text-white font-weight-bold shadow-badge">
                       <v-icon start icon="mdi-star" size="12"></v-icon>
-                      {{ item.rating ? `${item.rating}/10` : 'Non noté' }}
+                      {{ item.rating ? `${item.rating}/10` : $t('common.notRated') }}
                     </v-chip>
                     <v-chip v-else-if="item.status === 'WATCHING'" size="x-small" color="info" variant="flat" class="text-white font-weight-bold shadow-badge">
-                      En cours
+                      {{ $t('common.watching') }}
                     </v-chip>
                     <v-chip v-else-if="item.status === 'TO_WATCH'" size="x-small" color="grey-darken-3" variant="flat" class="text-white font-weight-bold shadow-badge">
-                      À voir
+                      {{ $t('common.watch') }}
                     </v-chip>
                   </div>
 
@@ -293,11 +295,11 @@
       class="d-flex flex-column align-center justify-center py-12 bg-transparent text-center mt-8"
     >
       <v-icon icon="mdi-movie-open-off-outline" size="80" color="grey-lighten-1" class="mb-4"></v-icon>
-      <h3 class="text-h6 font-weight-bold text-grey-darken-1 mb-2">Aucun résultat</h3>
-      <p class="text-grey mb-6">Modifiez vos filtres ou ajoutez de nouvelles œuvres à votre bibliothèque.</p>
+      <h3 class="text-h6 font-weight-bold text-grey-darken-1 mb-2">{{ $t('library.emptyTitle') }}</h3>
+      <p class="text-grey mb-6">{{ $t('library.emptyDescription') }}</p>
       
       <v-btn color="#8C52FF" variant="flat" rounded="xl" class="font-weight-bold px-6" @click="router.push('/')">
-        Explorer le catalogue
+        {{ $t('common.explore') }}
       </v-btn>
     </v-sheet>
   </v-container>

@@ -13,7 +13,7 @@ const goToMedia = (id, type) => router.push(`/${type}/${id}`);
 
 <template>
   <v-container class="mb-10" v-if="mediaList?.length">
-    <h3 class="text-h5 font-weight-bold mb-6">Les spectateurs ont aussi aimé</h3>
+    <h3 class="text-h5 font-weight-bold mb-6">{{ $t('media.similar') }}</h3>
     <v-row class="flex-nowrap overflow-x-auto pb-4">
       <v-col v-for="similar in mediaList" :key="similar.id" cols="6" sm="4" md="3" lg="2" class="flex-shrink-0">
         <v-card 
