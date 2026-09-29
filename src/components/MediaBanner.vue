@@ -59,7 +59,7 @@ defineProps({
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(to right, rgb(42, 24, 78) 150px, rgba(42, 24, 78, 0.84) 100%);
+  background-image: linear-gradient(to right, rgb(42, 24, 78) 150px, rgba(42, 24, 78, 0.828) 100%);
 }
 .content-overlay {
   position: relative;
