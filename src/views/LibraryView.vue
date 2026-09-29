@@ -11,7 +11,7 @@
     const loading = ref(true);
     
     const currentType = ref('all');
-    const currentStatus = ref('all');
+    const currentStatus = ref('WATCHED');
     const currentSort = ref('viewed_desc');
 
     //Options-de-tri

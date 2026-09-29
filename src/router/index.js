@@ -37,6 +37,12 @@ const routes = [
       meta: { public: true }
     },
     {
+      path: '/person/:id',
+      name: 'personDetails',
+      component: () => import('../views/PersonDetails.vue'),
+      meta: { public: true }
+    },
+    {
       path: '/library',
       name: 'library',
       component: LibraryView,
@@ -71,7 +77,14 @@ const routes = [
 
 const router = createRouter({
     history: createWebHistory(),
-    routes
+    routes,
+    scrollBehavior(to, from, savedPosition) {
+      if (savedPosition) {
+        return savedPosition;
+      } else {
+        return { top: 0 };
+      }
+    }
 })
 
 router.beforeEach((to, from, next) => {
