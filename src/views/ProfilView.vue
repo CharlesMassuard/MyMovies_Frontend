@@ -1,17 +1,31 @@
 <script setup>
-    import { ref } from 'vue'
+    import { ref, computed } from 'vue'
+    import { useI18n } from 'vue-i18n';
     import { useAuthStore } from '../stores/auth';
     import axios  from 'axios';
     import router from '../router';
     import ConfirmationDialog from '../components/ConfirmationDialog.vue';
+    import i18n, { languagePreference, setLanguagePreference } from '../i18n';
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const authStore = useAuthStore();
+    const { t } = useI18n();
+    const languageSelection = ref(languagePreference());
+    const languageOptions = computed(() => [
+      { title: t('language.auto'), value: 'auto' },
+      { title: t('language.french'), value: 'fr' },
+      { title: t('language.english'), value: 'en' }
+    ]);
+
+    const updateLanguage = (value) => {
+      languageSelection.value = value;
+      setLanguagePreference(value);
+    };
 
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString('fr-FR', options);
+        return new Date(dateString).toLocaleDateString(i18n.global.locale.value, options);
     };
 
     const tab = ref('profile')
@@ -36,12 +50,12 @@
     const snackbarText = ref('')
 
     const emailRules = [
-        v => !!v || 'Email requis',
-        v => /.+@.+\..+/.test(v) || 'L\'email doit être valide'
+        v => !!v || t('auth.emailRequired'),
+        v => /.+@.+\..+/.test(v) || t('auth.emailInvalid')
     ];
     const passwordRules = [
-        v => !!v || 'Mot de passe requis',
-        v => v.length >= 6 || 'Le mot de passe doit contenir au moins 6 caractères'
+        v => !!v || t('auth.passwordRequired'),
+        v => v.length >= 6 || t('auth.passwordLength')
     ];
 
     const newPasswordFocus = () => {
@@ -59,7 +73,7 @@
         const newPseudo = (tempPseudo.value || '').trim();
         
         if (!newPseudo) {
-          errorMessage.value = "Veuillez entrer un pseudo.";
+          errorMessage.value = t('profile.enterUsername');
           return;
         }
 
@@ -80,11 +94,7 @@
         dialogPseudo.value = false;
       } catch (error) {
         console.error(error);
-        if (error.response && error.response.data?.message === 'Pseudo already in use') {
-          errorMessage.value = "Ce pseudo est déjà utilisé.";
-        } else {
-          errorMessage.value = "Une erreur est survenue lors de la mise à jour.";
-        }
+        errorMessage.value = error.response?.data?.message || t('profile.updateError');
       }
     }
 
@@ -96,13 +106,13 @@
         const currentPassword = (tempOldPass.value || '').trim();
         
         if (!newMail) {
-          errorMessage.value = "Veuillez entrer une adresse email.";
+          errorMessage.value = t('profile.enterEmail');
           return;
         }
 
         const emailPattern = /.+@.+\..+/;
         if (!emailPattern.test(newMail)) {
-          errorMessage.value = "L'adresse email n'est pas valide.";
+          errorMessage.value = t('auth.invalidEmail');
           return;
         }
 
@@ -124,15 +134,11 @@
         tempEmail.value = '';
         dialogEmail.value = false;
         
-        snackbarText.value = "Email mis à jour avec succès !";
+        snackbarText.value = t('profile.emailUpdated');
         snackbar.value = true;
       } catch (error) {
         console.error(error);
-        if (error.response && error.response.data?.message === 'Email already in use') {
-          errorMessage.value = "Cette adresse email est déjà utilisée.";
-        } else {
-          errorMessage.value = "Une erreur est survenue lors de la mise à jour.";
-        }
+        errorMessage.value = error.response?.data?.message || t('profile.updateError');
       }
     }
 
@@ -141,17 +147,17 @@
         errorMessage.value = '';
 
         if (!tempOldPass.value || !tempPass.value) {
-          errorMessage.value = "Veuillez remplir tous les champs.";
+          errorMessage.value = t('profile.fillAll');
           return;
         }
 
         if (tempPass.value !== tempPassConfirm.value) {
-          errorMessage.value = "Les nouveaux mots de passe ne correspondent pas.";
+          errorMessage.value = t('profile.passwordsMismatch');
           return;
         }
 
         if(tempPass.value.length < 6) {
-          errorMessage.value = "Le nouveau mot de passe doit contenir au moins 6 caractères.";
+          errorMessage.value = t('profile.newPasswordLength');
           return;
         }
 
@@ -168,14 +174,14 @@
         tempOldPass.value = ''
         dialogPass.value = false;
         
-        snackbarText.value = "Mot de passe modifié avec succès !";
+        snackbarText.value = t('profile.passwordUpdated');
         snackbar.value = true;
       } catch (error) {
         console.error(error);
         if (error.response && error.response.status === 400) {
-          errorMessage.value = "L'ancien mot de passe est incorrect.";
+          errorMessage.value = error.response?.data?.message || t('profile.currentPasswordError');
         } else {
-          errorMessage.value = "Erreur lors du changement de mot de passe.";
+          errorMessage.value = error.response?.data?.message || t('profile.changePasswordError');
         }
       }
     }
@@ -217,8 +223,8 @@
         <v-card class="rounded-lg shadow-lg">
           
           <v-tabs v-model="tab" grow color="#8C52FF">
-            <v-tab value="profile">Profil</v-tab>
-            <v-tab value="settings">Paramètres</v-tab>
+            <v-tab value="profile">{{ $t('profile.profile') }}</v-tab>
+            <v-tab value="settings">{{ $t('profile.settings') }}</v-tab>
           </v-tabs>
 
           <v-window v-model="tab" class="pa-6">
@@ -228,8 +234,8 @@
                 <h2 class="text-h5 font-weight-bold">{{ authStore.user?.pseudo }}</h2>
                 <p class="text-body-3 text-medium-emphasis">{{ authStore.user?.mail }}</p>
                 <p class="text-body-2 text-medium-emphasis">
-                  Membre depuis le {{ formatDate(authStore.user?.registrationDate) }} - 
-                  Dernière connexion le {{ formatDate(authStore.user?.lastLoginDate) }}
+                  {{ $t('profile.memberSince') }} {{ formatDate(authStore.user?.registrationDate) }} -
+                  {{ $t('profile.lastLogin') }} {{ formatDate(authStore.user?.lastLoginDate) }}
                 </p>
               </div>
 
@@ -244,7 +250,7 @@
                     @click="dialogPseudo = true"
                     class="mb-3"
                   >
-                    Changer le pseudo
+                    {{ $t('profile.changeUsername') }}
                   </v-btn>
                   <v-btn
                     block
@@ -253,7 +259,7 @@
                     @click="dialogEmail = true"
                     class="mb-3"
                   >
-                    Changer l'adresse mail
+                    {{ $t('profile.changeEmail') }}
                   </v-btn>
                 </v-col>
                 <v-col cols="12">
@@ -263,15 +269,27 @@
                     prepend-icon="mdi-lock-reset"
                     @click="dialogPass = true"
                   >
-                    Changer le mot de passe
+                    {{ $t('profile.changePassword') }}
                   </v-btn>
                 </v-col>
               </v-row>
             </v-window-item>
 
             <v-window-item value="settings">
+              <v-select
+                v-model="languageSelection"
+                :items="languageOptions"
+                item-title="title"
+                item-value="value"
+                :label="$t('language.label')"
+                :hint="$t('profile.languageHelp')"
+                persistent-hint
+                variant="outlined"
+                class="mt-6"
+                @update:model-value="updateLanguage"
+              ></v-select>
               <v-btn color="error" variant="text" class="px-0 mt-4" @click="deleteUser()">
-                Supprimer le compte
+                {{ $t('profile.deleteAccount') }}
               </v-btn>
             </v-window-item>
           </v-window>
@@ -280,62 +298,62 @@
     </v-row>
 
     <v-dialog v-model="dialogPseudo" max-width="400">
-      <v-card title="Modifier le pseudo" class="pa-4">
+      <v-card :title="$t('profile.editUsername')" class="pa-4">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
           {{ errorMessage }}
         </v-alert>
 
         <v-text-field
           v-model="tempPseudo"
-          label="Nouveau Pseudo"
+          :label="$t('profile.newUsername')"
           variant="underlined"
           type="text"
         ></v-text-field>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialogs">Annuler</v-btn>
-          <v-btn color="#8C52FF" @click="savePseudo">Valider</v-btn>
+          <v-btn variant="text" @click="closeDialogs">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="#8C52FF" @click="savePseudo">{{ $t('common.validate') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="dialogEmail" max-width="400">
-      <v-card title="Modifier l'email" class="pa-4">
+      <v-card :title="$t('profile.editEmail')" class="pa-4">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
           {{ errorMessage }}
         </v-alert>
 
         <v-text-field
           v-model="tempEmail"
-          label="Nouvel Email"
+          :label="$t('profile.newEmail')"
           variant="underlined"
           type="email"
           :rules="emailRules"
         ></v-text-field>
         <v-text-field
           v-model="tempOldPass"
-          label="Mot de passe"
+          :label="$t('auth.password')"
           type="password"
           variant="underlined"
           @keydown.enter.prevent="newPasswordFocus"
         ></v-text-field>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialogs">Annuler</v-btn>
-          <v-btn color="#8C52FF" @click="saveEmail">Valider</v-btn>
+          <v-btn variant="text" @click="closeDialogs">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="#8C52FF" @click="saveEmail">{{ $t('common.validate') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="dialogPass" max-width="400">
-      <v-card title="Modifier le mot de passe" class="pa-4">
+      <v-card :title="$t('profile.editPassword')" class="pa-4">
         <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
           {{ errorMessage }}
         </v-alert>
 
         <v-text-field
           v-model="tempOldPass"
-          label="Ancien mot de passe"
+          :label="$t('profile.oldPassword')"
           type="password"
           variant="underlined"
           @keydown.enter.prevent="newPasswordFocus"
@@ -343,7 +361,7 @@
         
         <v-text-field
           v-model="tempPass"
-          label="Nouveau mot de passe"
+          :label="$t('profile.newPassword')"
           type="password"
           variant="underlined"
           ref="newPassword"
@@ -353,7 +371,7 @@
         
         <v-text-field
           v-model="tempPassConfirm"
-          label="Confirmer le nouveau mot de passe"
+          :label="$t('profile.confirmPassword')"
           type="password"
           variant="underlined"
           ref="newPasswordConfirm"
@@ -361,8 +379,8 @@
         ></v-text-field>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialogs">Annuler</v-btn>
-          <v-btn color="#8C52FF" @click="savePass">Valider</v-btn>
+          <v-btn variant="text" @click="closeDialogs">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="#8C52FF" @click="savePass">{{ $t('common.validate') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -377,10 +395,10 @@
     </v-snackbar>
     <ConfirmationDialog
         v-model="dialogConfirmation"
-        title="Supprimer mon compte"
-        message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
-        confirm-text="Supprimer"
-        cancel-text="Annuler"
+        :title="$t('media.deleteAccount')"
+        :message="$t('media.deleteAccountQuestion')"
+        :confirm-text="$t('common.delete')"
+        :cancel-text="$t('common.cancel')"
         @confirm="confirmDeleteUser"
   ></ConfirmationDialog>
 </template>

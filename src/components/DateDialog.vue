@@ -55,7 +55,7 @@ const setLongTimeAgo = () => {
           class="text-none font-weight-medium" 
           @click="setLongTimeAgo"
         >
-          Vu il y a longtemps
+          {{ $t('media.finishedLongAgo') }}
         </v-btn>
         
         <div class="d-flex ga-2 ml-auto">
@@ -64,7 +64,7 @@ const setLongTimeAgo = () => {
             class="text-none font-weight-medium" 
             @click="closeDialog"
           >
-            Annuler
+            {{ $t('common.cancel') }}
           </v-btn>
           
           <v-btn 
@@ -73,7 +73,7 @@ const setLongTimeAgo = () => {
             class="text-none font-weight-bold px-4" 
             @click="confirmDate"
           >
-            Confirmer
+            {{ $t('common.confirm') }}
           </v-btn>
         </div>
       </v-card-actions>

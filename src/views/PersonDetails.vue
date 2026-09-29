@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import noPoster from '../assets/noPosterAvailable.webp';
 
@@ -8,6 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const personId = computed(() => route.params.id);
 
 const isLoading = ref(true);
@@ -63,7 +65,7 @@ const groupedFilmography = computed(() => {
   
   personCredits.value.forEach(media => {
     const dateStr = media.release_date || media.first_air_date;
-    const year = dateStr ? dateStr.substring(0, 4) : 'À venir';
+  const year = dateStr ? dateStr.substring(0, 4) : t('common.upcomingShort');
     
     if(!groups[year]) {
       groups[year] = [];
@@ -74,8 +76,8 @@ const groupedFilmography = computed(() => {
   //On-trie-les-années-par-ordre-décroissant,-avec-'À-venir'-en-premier
   return Object.keys(groups)
     .sort((a, b) => {
-      if (a === 'À venir') return -1;
-      if (b === 'À venir') return 1;
+      if (a === t('common.upcomingShort')) return -1;
+      if (b === t('common.upcomingShort')) return 1;
       return b - a;
     })
     .map(year => ({
@@ -87,10 +89,10 @@ const groupedFilmography = computed(() => {
 
 const getGender = (id) => {
   switch(id) {
-    case 1: return "Femme";
-    case 2: return "Homme";
-    case 3: return "Non-binaire";
-    default: return "Non spécifié";
+    case 1: return t('person.female');
+    case 2: return t('person.male');
+    case 3: return t('person.nonBinary');
+    default: return t('person.unspecified');
   }
 };
 
@@ -188,36 +190,36 @@ watch(() => personId.value, () => {
                 </v-btn>
               </div>
 
-              <h3 class="text-h6 font-weight-bold mb-4">Infos personnelles</h3>
+              <h3 class="text-h6 font-weight-bold mb-4">{{ $t('person.personalInfo') }}</h3>
               
               <div class="info-item mb-4" v-if="personDetails.known_for_department">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">Métier</div>
+                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.job') }}</div>
                 <div class="text-body-1 font-weight-medium">{{ personDetails.known_for_department }}</div>
               </div>
 
               <div class="info-item mb-4" v-if="personDetails.gender">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">Sexe</div>
+                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.gender') }}</div>
                 <div class="text-body-1 font-weight-medium">{{ getGender(personDetails.gender) }}</div>
               </div>
 
               <div class="info-item mb-4" v-if="personDetails.birthday">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">Naissance</div>
+                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.birth') }}</div>
                 <div class="text-body-1 font-weight-medium">
                   {{ formatDate(personDetails.birthday) }}
-                  <span v-if="!personDetails.deathday" class="text-grey-darken-1 text-body-2"><br>({{ calculateAge(personDetails.birthday) }} ans)</span>
+                  <span v-if="!personDetails.deathday" class="text-grey-darken-1 text-body-2"><br>({{ calculateAge(personDetails.birthday) }} {{ $t('common.yearsOld') }})</span>
                 </div>
               </div>
 
               <div class="info-item mb-4" v-if="personDetails.deathday">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">Décès</div>
+                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.death') }}</div>
                 <div class="text-body-1 font-weight-medium">
                   {{ formatDate(personDetails.deathday) }}
-                  <span class="text-grey-darken-1 text-body-2"><br>(à {{ calculateAge(personDetails.birthday, personDetails.deathday) }} ans)</span>
+                  <span class="text-grey-darken-1 text-body-2"><br>({{ calculateAge(personDetails.birthday, personDetails.deathday) }} {{ $t('common.yearsOld') }})</span>
                 </div>
               </div>
 
               <div class="info-item" v-if="personDetails.place_of_birth">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">Lieu de naissance</div>
+                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.birthPlace') }}</div>
                 <div class="text-body-1 font-weight-medium">{{ personDetails.place_of_birth }}</div>
               </div>
             </v-card-text>
@@ -242,17 +244,17 @@ watch(() => personId.value, () => {
                 @click="showFullBio = !showFullBio"
                 :ripple="false"
               >
-                {{ showFullBio ? 'Moins' : 'Lire la suite' }}
+                {{ showFullBio ? $t('common.readLess') : $t('common.readMore') }}
                 <v-icon end>{{ showFullBio ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
               </v-btn>
             </div>
-            <p v-else class="text-grey-darken-1 italic">Aucune biographie n'est disponible pour le moment.</p>
+            <p v-else class="text-grey-darken-1 italic">{{ $t('person.noBiography') }}</p>
           </div>
 
           <!--Connu-pour-->
           <div v-if="knownForMovies.length > 0" class="mb-12">
             <h3 class="text-h5 font-weight-bold mb-4 d-flex align-center ga-2">
-              <v-icon color="#8C52FF">mdi-star-shooting</v-icon> Connu(e) pour
+              <v-icon color="#8C52FF">mdi-star-shooting</v-icon> {{ $t('media.knownFor') }}
             </h3>
             <v-row class="flex-nowrap overflow-x-auto pb-4 hide-scrollbar">
               <v-col v-for="media in knownForMovies" :key="media.id" cols="5" sm="4" md="3" lg="3" class="flex-shrink-0">
@@ -278,7 +280,7 @@ watch(() => personId.value, () => {
           <!--Filmographie-Timeline-->
           <div v-if="groupedFilmography.length > 0">
             <h3 class="text-h5 font-weight-bold mb-6 d-flex align-center ga-2">
-              <v-icon color="#8C52FF">mdi-movie-open-outline</v-icon> Filmographie
+              <v-icon color="#8C52FF">mdi-movie-open-outline</v-icon> {{ $t('media.filmography') }}
             </h3>
             
             <div class="filmography-container">
@@ -309,10 +311,10 @@ watch(() => personId.value, () => {
                         
                         <v-list-item-subtitle class="text-body-2 text-grey-darken-2 d-flex align-center flex-wrap ga-2">
                           <v-chip size="x-small" :color="media.media_type === 'tv' ? '#8C52FF' : 'grey-darken-3'" variant="flat" class="text-white font-weight-bold">
-                            {{ media.media_type === 'tv' ? 'Série' : 'Film' }}
+                            {{ media.media_type === 'tv' ? $t('common.series') : $t('common.movie') }}
                           </v-chip>
                           <span v-if="media.character" class="opacity-90">
-                            en tant que <strong class="text-black">{{ media.character }}</strong>
+                            {{ $t('common.asCharacter') }} <strong class="text-black">{{ media.character }}</strong>
                           </span>
                         </v-list-item-subtitle>
                         

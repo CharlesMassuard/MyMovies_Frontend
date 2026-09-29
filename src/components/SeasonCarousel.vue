@@ -10,7 +10,7 @@ defineEmits(['select-season']);
 
 <template>
   <v-container class="mt-8" v-if="seasons?.length">
-    <h3 class="text-h5 font-weight-bold mb-4">Saisons ({{ totalSeasons }})</h3>
+    <h3 class="text-h5 font-weight-bold mb-4">{{ $t('episodes.seasons') }} ({{ totalSeasons }})</h3>
     <v-row class="flex-nowrap overflow-x-auto pb-4">
       <v-col 
         v-for="season in seasons" 
@@ -33,7 +33,7 @@ defineEmits(['select-season']);
           <v-card-text class="pa-3">
             <p class="font-weight-bold mb-1 text-truncate text-body-2">{{ season.name }}</p>
             <p class="text-caption text-grey-darken-1 mb-0">
-              {{ season.episode_count }} épisode{{ season.episode_count > 1 ? 's' : '' }}
+              {{ season.episode_count }} {{ $t('media.episodes') }}
             </p>
             <p v-if="season.air_date" class="text-caption text-grey-darken-1">
               {{ season.air_date.split('-')[0] }}

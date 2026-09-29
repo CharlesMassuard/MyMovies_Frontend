@@ -25,11 +25,11 @@ const goToLogin = () => {
     <v-card class="rounded-xl pa-4">
       <div class="text-center">
         <v-icon color="#8C52FF" size="64" class="mb-4">mdi-account-lock</v-icon>
-        <v-card-title class="text-h5 font-weight-bold justify-center">Authentification requise</v-card-title>
+        <v-card-title class="text-h5 font-weight-bold justify-center">{{ $t('auth.authError') }}</v-card-title>
       </div>
       
       <v-card-text class="text-center text-body-1 text-grey-darken-1">
-        {{ message || "Vous devez être connecté pour effectuer cette action." }}
+        {{ message || $t('auth.mustLogin') }}
       </v-card-text>
 
       <v-card-actions class="flex-column ga-2 mt-4">
@@ -41,7 +41,7 @@ const goToLogin = () => {
           variant="flat"
           @click="goToLogin"
         >
-          Se connecter
+          {{ $t('header.login') }}
         </v-btn>
         
         <v-btn
@@ -50,7 +50,7 @@ const goToLogin = () => {
           rounded="xl"
           @click="closeDialog"
         >
-          Plus tard
+          {{ $t('common.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>

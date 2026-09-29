@@ -47,7 +47,7 @@ onMounted(() => {
       <div class="d-flex align-center mb-4 px-2">
         <v-icon color="#8C52FF" class="mr-2">mdi-sparkles</v-icon>
         <h3 class="text-h5 font-weight-bold">
-          Parce que vous avez aimé <span class="text-primary">{{ section.sourceTitle }}</span>
+          {{ $t('recommendations.because') }} <span class="text-primary">{{ section.sourceTitle }}</span>
         </h3>
       </div>
 

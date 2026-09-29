@@ -1,6 +1,7 @@
 <script setup>
     import { useAuthStore } from '../stores/auth';
-    import { ref, watch } from 'vue';
+    import { ref, watch, computed } from 'vue';
+    import { useI18n } from 'vue-i18n';
     import { useRouter } from 'vue-router';
     import axios from 'axios';
     import noPoster from '../assets/noPosterAvailable.webp';
@@ -8,6 +9,7 @@
 
     const router = useRouter();
     const authStore = useAuthStore();
+    const { t } = useI18n();
     const apiPath = import.meta.env.VITE_API_BASE_URL;
 
     const searchQuery = ref('');
@@ -19,18 +21,18 @@
     const isSelecting = ref(false);
     const dialogConfirmation = ref(false);
 
-    const profilItems = [
-        { title: 'Mon Profil', icon: 'mdi-account' },
-        { title: 'Ma Bibliothèque', icon: 'mdi-library-shelves' },
-        { title: 'Déconnexion', icon: 'mdi-logout' }
-    ];
+    const profilItems = computed(() => [
+        { key: 'profile', title: t('header.profile'), icon: 'mdi-account' },
+        { key: 'library', title: t('header.library'), icon: 'mdi-library-shelves' },
+        { key: 'logout', title: t('header.logout'), icon: 'mdi-logout' }
+    ]);
 
     const handleProfilClick = (item) => {
-        if (item.title === 'Déconnexion') {
+        if (item.key === 'logout') {
             dialogConfirmation.value = true;
-        } else if (item.title === 'Mon Profil') {
+        } else if (item.key === 'profile') {
             router.push('/profil');
-        } else if (item.title === 'Ma Bibliothèque') {
+        } else if (item.key === 'library') {
             router.push('/library');
         }
     };
@@ -126,7 +128,7 @@
 <template>
   <v-app-bar :elevation="0" v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideHeader">
     <div class="header-section">
-      <img src="../assets/logoMyMoviesTxt.webp" alt="MyMovies Logo" class="logo" @click="returnMain" />
+      <img src="../assets/logoMyMoviesTxt.webp" alt="MyMovies" class="logo" @click="returnMain" />
     </div>
 
     <div class="search-container">
@@ -135,9 +137,9 @@
           <v-text-field 
               v-bind="props"
               clearable 
-              label="Rechercher" 
+              :label="$t('header.search')"
               density="compact"
-              placeholder="Inception, Stranger Things, Interstellar, ..."
+              :placeholder="$t('header.searchPlaceholder')"
               variant="outlined" 
               rounded="xl" 
               class="search-bar custom-append"
@@ -178,7 +180,7 @@
                 :color="item.media_type === 'serie' ? '#8C52FE' : '#4287f5'" 
                 class="text-white mr-2"
               >
-                {{ item.media_type === 'serie' ? 'Série' : 'Film' }}
+                {{ item.media_type === 'serie' ? $t('header.typeSeries') : $t('header.typeMovie') }}
               </v-chip>
               <span>{{ item.year }}</span>
             </v-list-item-subtitle>
@@ -215,7 +217,7 @@
                 @click="handleProfilClick(item)"
                 rounded="md"
                 class="mb-1"
-                :base-color="item.title === 'Déconnexion' ? 'error' : ''"
+                :base-color="item.key === 'logout' ? 'error' : ''"
             >
                 <template v-slot:prepend>
                     <v-icon :icon="item.icon" size="small"></v-icon>
@@ -235,17 +237,17 @@
         variant="flat"
         class="px-6"
       >
-        Se Connecter
+        {{ $t('header.login') }}
       </v-btn>
     </div>
   </v-app-bar>
 
   <ConfirmationDialog
     v-model="dialogConfirmation"
-    title="Déconnexion"
-    message="Êtes-vous sûr de vouloir vous déconnecter ?"
-    confirm-text="Déconnecter"
-    cancel-text="Annuler"
+    :title="$t('header.logout')"
+    :message="$t('header.logoutQuestion')"
+    :confirm-text="$t('header.logout')"
+    :cancel-text="$t('common.cancel')"
     @confirm="confirmLogout"
   ></ConfirmationDialog>
 </template>

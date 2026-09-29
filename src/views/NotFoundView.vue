@@ -23,10 +23,10 @@ const returnHome = () => {
 
         <div class="glass-card pa-8 rounded-xl mb-8">
           <h2 class="text-h4 font-weight-black mb-4 gradient-text">
-            Scène manquante au montage
+            {{ $t('notFound.title') }}
           </h2>
           <p class="text-body-1 text-grey-lighten-1">
-            Désolé, mais l'URL que vous tentez de visionner n'est pas disponible.
+            {{ $t('notFound.text') }}
           </p>
         </div>
 
@@ -38,8 +38,7 @@ const returnHome = () => {
           class="home-btn px-10"
           @click="returnHome"
         >
-          <v-icon start>mdi-arrow-left</v-icon>
-          Retour à l'accueil
+          <v-icon start>mdi-arrow-left</v-icon> {{ $t('notFound.home') }}
         </v-btn>
       </v-col>
     </v-row>

@@ -15,6 +15,6 @@ defineProps({
     >
       <span class="font-weight-bold text-caption">{{ Math.round(voteAverage * 10) }}%</span>
     </v-progress-circular>
-    <span class="ml-3 font-weight-bold" style="line-height: 1.2;">Score d'évaluation<br>TMDB</span>
+    <span class="ml-3 font-weight-bold" style="line-height: 1.2;">{{ $t('common.score') }}<br>{{ $t('common.tmdb') }}</span>
   </div>
 </template>
