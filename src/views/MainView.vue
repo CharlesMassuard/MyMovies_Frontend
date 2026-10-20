@@ -537,7 +537,9 @@
                   </div>
                 </v-card>
               </div>
-              <span class="ranking-number">{{ index + 1 }}</span>
+              <svg class="ranking-number" viewBox="0 0 160 120" overflow="visible">
+                <text x="0" y="105" class="svg-text">{{ index + 1 }}</text>
+              </svg>
             </div>
           </v-slide-group-item>
         </v-slide-group>
@@ -599,7 +601,9 @@
                   </div>
                 </v-card>
               </div>
-              <span class="ranking-number">{{ index + 1 }}</span>
+              <svg class="ranking-number" viewBox="0 0 160 120" overflow="visible">
+                <text x="0" y="105" class="svg-text">{{ index + 1 }}</text>
+              </svg>
             </div>
           </v-slide-group-item>
         </v-slide-group>
@@ -659,7 +663,9 @@
                   </div>
                 </v-card>
               </div>
-              <span class="ranking-number">{{ index + 1 }}</span>
+              <svg class="ranking-number" viewBox="0 0 160 120" overflow="visible">
+                <text x="0" y="105" class="svg-text">{{ index + 1 }}</text>
+              </svg>
             </div>
           </v-slide-group-item>
         </v-slide-group>
@@ -864,19 +870,28 @@
     }
 
     .ranking-number {
-        position: absolute;
-        bottom: -10px;
-        left: -25px;
-        font-size: 6rem;
-        font-weight: 900;
-        line-height: 1;
-        z-index: 2;
-        color: #e1e1e1;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-        -webkit-text-stroke: 4px #ffffff;
-        user-select: none;
-        pointer-events: none;
-    }
+    position: absolute;
+    bottom: -15px;
+    left: -25px;
+    /*Largeur-augmentee-pour-eviter-la-coupure-du-deuxieme-chiffre*/
+    width: 160px;
+    height: 120px;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+    /*Maintien-de-l-ombre-portee-globale*/
+    filter: drop-shadow(2px 2px 6px rgba(0,0,0,0.4));
+}
+
+.svg-text {
+    font-size: 6rem;
+    font-weight: 900;
+    fill: #e1e1e1;
+    stroke: #ffffff;
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    paint-order: stroke fill;
+}
 
     .shadow-badge {
         box-shadow: 0 2px 8px rgba(0,0,0,0.4);
