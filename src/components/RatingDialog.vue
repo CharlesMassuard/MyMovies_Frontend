@@ -82,10 +82,10 @@ const saveRating = () => {
             v-slot="{ isSelected, toggle }"
           >
             <v-card
-              :color="isSelected ? '#8C52FF' : 'white'"
+              :color="isSelected ? '#8C52FF' : 'surface-variant'"
               :class="[
                 'ma-2 d-flex align-center justify-center rating-card elevation-2',
-                isSelected ? 'text-white' : 'text-grey-darken-3'
+                isSelected ? 'text-white' : 'text-high-emphasis'
               ]"
               height="40"
               width="40"

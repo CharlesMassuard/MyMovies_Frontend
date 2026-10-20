@@ -371,7 +371,7 @@ watch(() => serieId.value, () => {
 </template>
 
 <style scoped>
-.serie-page { background: white; min-height: 100vh; }
+.serie-page { background: var(--app-background); min-height: 100vh; }
 .subtitle-info { font-size: 0.95rem; color: #efefef; }
 .overview-text { font-size: 0.95rem; line-height: 1.4; text-align: justify; }
 .network-badge { display: inline-flex; align-items: center; justify-content: center; }

@@ -346,7 +346,7 @@
               rounded="xl"
               variant="outlined"
               density="compact"
-              class="bg-white filter-toggle"
+              class="filter-toggle"
           >
               <v-btn value="all" class="text-none font-weight-bold px-6">{{ $t('home.general') }}</v-btn>
               <v-btn value="movie" class="text-none font-weight-bold px-6">{{ $t('common.movies') }}</v-btn>
@@ -752,7 +752,7 @@
         width: 100%;
         padding: 0 16px;
         position: relative;
-        border-bottom: 2px solid #ebebeb;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.12);
         padding-bottom: 10px;
         margin-bottom: 15px;
     }
@@ -782,7 +782,7 @@
     }
 
     .border-wrapper {
-        border: 4px solid #ffffff;
+        border: 4px solid var(--poster-border);
         border-radius: 20px;
         overflow: hidden;
         width: fit-content;

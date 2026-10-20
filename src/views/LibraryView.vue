@@ -186,7 +186,7 @@
         rounded="xl"
         variant="outlined"
         density="compact"
-        class="bg-white w-100 w-md-auto d-flex"
+        class="w-100 w-md-auto d-flex"
       >
         <v-btn value="all" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">{{ $t('library.all') }}</v-btn>
         <v-btn value="movie" class="text-none font-weight-bold flex-grow-1 px-2 px-md-6">{{ $t('library.movies') }}</v-btn>
@@ -339,7 +339,7 @@
     }
 
     .border-wrapper {
-        border: 4px solid #ffffff;
+        border: 4px solid var(--poster-border);
         border-radius: 20px;
         overflow: hidden;
         width: 100%;
@@ -387,7 +387,7 @@
     }
     
     .sort-select {
-        background-color: white;
+        background-color: var(--app-surface);
         border-radius: 8px;
     }
 </style>

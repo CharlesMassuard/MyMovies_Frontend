@@ -1,5 +1,5 @@
 <template>
-  <v-footer v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideFooter" class="mt-10 border-t" style="background-color: #F5F5F5;">
+  <v-footer v-if="$route.path !== '/login' && $route.path !== '/register' && !$route.meta.hideFooter" class="mt-10 border-t">
     <v-container>
       <v-row align="center" justify="space-between" class="py-8">
         <v-col cols="12" md="3" class="text-center text-md-left mb-6 mb-md-0">

@@ -32,10 +32,10 @@ defineEmits(['select-season']);
           ></v-img>
           <v-card-text class="pa-3">
             <p class="font-weight-bold mb-1 text-truncate text-body-2">{{ season.name }}</p>
-            <p class="text-caption text-grey-darken-1 mb-0">
+            <p class="text-caption text-medium-emphasis mb-0">
               {{ season.episode_count }} {{ $t('media.episodes') }}
             </p>
-            <p v-if="season.air_date" class="text-caption text-grey-darken-1">
+            <p v-if="season.air_date" class="text-caption text-medium-emphasis">
               {{ season.air_date.split('-')[0] }}
             </p>
           </v-card-text>
@@ -60,6 +60,6 @@ defineEmits(['select-season']);
 }
 .active-season {
   border-color: #8C52FF !important;
-  background-color: #f8f5ff;
+  background-color: rgba(140, 82, 255, 0.12);
 }
 </style>
