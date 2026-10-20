@@ -55,13 +55,13 @@ const routes = [
       meta: { public: false }
     },
     {
-      path: '/mentions-legales',
+      path: '/legal-notice',
       name: 'legalNotice',
       component: LegalNoticeView,
       meta: { public: true }
     },
     {
-      path: '/confidentialite',
+      path: '/privacy-policy',
       name: 'privacyPolicy',
       component: PrivacyPolicyView,
       meta: { public: true }

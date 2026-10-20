@@ -20,8 +20,8 @@
             <v-btn variant="text" size="small" to="/profil" class="text-none">{{ $t('footer.profile') }}</v-btn>
           </div>
           <div class="d-flex flex-wrap justify-center ga-4">
-            <v-btn variant="plain" size="x-small" to="/mentions-legales" class="text-none text-grey">{{ $t('footer.legal') }}</v-btn>
-            <v-btn variant="plain" size="x-small" to="/confidentialite" class="text-none text-grey">{{ $t('footer.privacy') }}</v-btn>
+            <v-btn variant="plain" size="x-small" to="/legal-notice" class="text-none text-grey">{{ $t('footer.legal') }}</v-btn>
+            <v-btn variant="plain" size="x-small" to="/privacy-policy" class="text-none text-grey">{{ $t('footer.privacy') }}</v-btn>
           </div>
         </v-col>
 
