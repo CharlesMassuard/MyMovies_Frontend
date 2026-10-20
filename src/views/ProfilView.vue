@@ -227,6 +227,11 @@
         tempPassConfirm.value = '';
         tempOldPass.value = '';
     }
+
+    const changeWatchlistVisibilityOnMainPage = (value) => {
+      authStore.setShowWatchlistOnMainPage(value);
+    }
+
 </script>
 
 <template>
@@ -313,6 +318,12 @@
                 class="mt-6"
                 @update:model-value="updateTheme"
               ></v-select>
+              <v-divider class="my-6"></v-divider>
+              <v-checkbox
+                v-model="authStore.showWatchlistOnMainPage"
+                :label="$t('profile.showMyWatchlist')"
+                @update:model-value="changeWatchlistVisibilityOnMainPage"
+              ></v-checkbox>
               <v-btn color="error" variant="text" class="px-0 mt-4" @click="deleteUser()">
                 {{ $t('profile.deleteAccount') }}
               </v-btn>
