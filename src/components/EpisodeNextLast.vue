@@ -35,7 +35,7 @@ const translateEpisodeType = (type) => {
     <v-row>
       <!-- Dernier épisode -->
       <v-col cols="12" md="6" v-if="lastEpisode">
-        <v-card class="pa-5 rounded-xl elevation-2 h-100 d-flex flex-column" color="#fcfcfc">
+        <v-card class="pa-5 rounded-xl elevation-2 h-100 d-flex flex-column">
           <div class="d-flex align-center justify-space-between mb-3 flex-wrap ga-2">
             <span class="text-overline text-grey-darken-1 text-no-wrap flex-shrink-0">{{ $t('media.lastEpisode') }}</span>
             <div class="d-flex align-center ga-2">
@@ -51,7 +51,7 @@ const translateEpisodeType = (type) => {
             <span class="text-primary mr-2">{{ formatEpisodeNumber(lastEpisode.season_number, lastEpisode.episode_number) }}</span>
             {{ lastEpisode.name }}
           </h4>
-          <p class="text-body-2 text-grey-darken-3 mb-4 flex-grow-1 text-justify">
+          <p class="text-body-2 text-medium-emphasis mb-4 flex-grow-1 text-justify">
             {{ lastEpisode.overview || $t('episodes.noOverview') }}
           </p>
           <div class="d-flex align-center mt-auto" v-if="lastEpisode.vote_average">
@@ -79,7 +79,7 @@ const translateEpisodeType = (type) => {
             <span class="text-primary mr-2">{{ formatEpisodeNumber(nextEpisode.season_number, nextEpisode.episode_number) }}</span>
             {{ nextEpisode.name }}
           </h4>
-          <p class="text-body-2 text-grey-darken-3 mb-4 flex-grow-1 text-justify">
+          <p class="text-body-2 text-medium-emphasis mb-4 flex-grow-1 text-justify">
             {{ nextEpisode.overview || $t('episodes.noOverview') }}
           </p>
         </v-card>

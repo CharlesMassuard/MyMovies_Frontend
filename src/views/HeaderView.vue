@@ -255,7 +255,7 @@
 <style scoped>
     .v-toolbar {
         padding: 5px 15px !important;
-        border-bottom: 1px solid #e0e0e0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
     }
 
     .search-container {
@@ -268,7 +268,7 @@
     .dropdown-list {
         max-width: 500px;
         width: 100%;
-        border: 1px solid #e0e0e0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
         max-height: 400px; 
         overflow-y: auto;
     }
@@ -335,8 +335,7 @@
     }
 
     .profil-dropdown {
-        border: 1px solid #f0f0f0;
-        background: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     @media (max-width: 960px) {

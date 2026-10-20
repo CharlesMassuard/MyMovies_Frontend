@@ -4,6 +4,8 @@ import { ref, computed } from 'vue';
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('user_token') || null);
   const refreshToken = ref(localStorage.getItem('user_refresh_token') || null);
+  const storedWatchlistVisibility = localStorage.getItem('showWatchlistOnMainPage');
+  const showWatchlistOnMainPage = ref(storedWatchlistVisibility !== 'false');
   
   const savedUser = localStorage.getItem('user_data');
   const user = ref(savedUser ? JSON.parse(savedUser) : null);
@@ -27,6 +29,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user_data', JSON.stringify(userData));
   }
 
+  function setShowWatchlistOnMainPage(value) {
+    showWatchlistOnMainPage.value = Boolean(value);
+    localStorage.setItem('showWatchlistOnMainPage', String(showWatchlistOnMainPage.value));
+  }
+
   function logout() {
     token.value = null;
     refreshToken.value = null;
@@ -36,5 +43,15 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('user_data');
   }
 
-  return { token, refreshToken, user, isAuthenticated, login, setUser, logout };
+  return {
+    token,
+    refreshToken,
+    user,
+    isAuthenticated,
+    showWatchlistOnMainPage,
+    login,
+    setUser,
+    setShowWatchlistOnMainPage,
+    logout
+  };
 });

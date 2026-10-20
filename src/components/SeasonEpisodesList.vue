@@ -36,17 +36,17 @@ const translateEpisodeType = (type) => {
     </div>
 
     <v-expand-transition>
-      <div v-if="seasonInfo && !loading" class="mt-4 bg-grey-lighten-4 rounded-xl pa-6 border">
+      <div v-if="seasonInfo && !loading" class="mt-4 season-details rounded-xl pa-6 border">
         <div class="d-flex justify-space-between align-center mb-6">
           <h3 class="text-h5 font-weight-bold">
-            {{ seasonInfo.name }} <span class="text-body-1 text-grey-darken-1">({{ seasonInfo.episodes?.length }} {{ $t('media.episodes') }})</span>
+            {{ seasonInfo.name }} <span class="text-body-1 text-medium-emphasis">({{ seasonInfo.episodes?.length }} {{ $t('media.episodes') }})</span>
           </h3>
           <v-btn icon="mdi-close" variant="text" @click="$emit('close')"></v-btn>
         </div>
 
         <v-row>
           <v-col cols="12" v-for="episode in seasonInfo.episodes" :key="episode.id">
-            <v-card class="d-flex flex-column flex-md-row rounded-lg overflow-hidden elevation-1" color="white">
+            <v-card class="d-flex flex-column flex-md-row rounded-lg overflow-hidden elevation-1 episode-card">
               <v-img
                 :src="episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : noPoster"
                 width="100%"
@@ -65,12 +65,12 @@ const translateEpisodeType = (type) => {
                     <v-chip v-if="translateEpisodeType(episode.episode_type)" size="small" color="error" variant="flat" class="font-weight-bold">
                       {{ translateEpisodeType(episode.episode_type) }}
                     </v-chip>
-                    <v-chip size="small" color="grey-darken-3" variant="outlined" class="bg-white">
+                    <v-chip size="small" color="primary" variant="outlined">
                       {{ formatDate(episode.air_date) }}
                     </v-chip>
                   </div>
                 </div>
-                <p class="text-body-2 text-grey-darken-3 mb-3 flex-grow-1 text-justify">
+                <p class="text-body-2 text-medium-emphasis mb-3 flex-grow-1 text-justify">
                   {{ episode.overview || $t('episodes.noOverview') }}
                 </p>
                 <div class="d-flex align-center mt-auto" v-if="episode.vote_average">
@@ -89,6 +89,12 @@ const translateEpisodeType = (type) => {
 <style scoped>
 .episode-img {
   min-width: 250px;
+}
+.season-details {
+  background: var(--app-surface);
+}
+.episode-card {
+  background: var(--app-surface);
 }
 @media (max-width: 960px) {
   .episode-img {

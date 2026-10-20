@@ -6,6 +6,7 @@
     import router from '../router';
     import ConfirmationDialog from '../components/ConfirmationDialog.vue';
     import i18n, { languagePreference, setLanguagePreference } from '../i18n';
+    import { themePreference, setThemePreference } from '../plugins/vuetify';
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -21,6 +22,18 @@
     const updateLanguage = (value) => {
       languageSelection.value = value;
       setLanguagePreference(value);
+    };
+
+    const themeSelection = ref(themePreference());
+    const themeOptions = computed(() => [
+      { title: t('theme.system'), value: 'system' },
+      { title: t('theme.light'), value: 'light' },
+      { title: t('theme.dark'), value: 'dark' }
+    ]);
+
+    const updateTheme = (value) => {
+      themeSelection.value = value;
+      setThemePreference(value);
     };
 
     const formatDate = (dateString) => {
@@ -214,6 +227,11 @@
         tempPassConfirm.value = '';
         tempOldPass.value = '';
     }
+
+    const changeWatchlistVisibilityOnMainPage = (value) => {
+      authStore.setShowWatchlistOnMainPage(value);
+    }
+
 </script>
 
 <template>
@@ -288,6 +306,24 @@
                 class="mt-6"
                 @update:model-value="updateLanguage"
               ></v-select>
+              <v-select
+                v-model="themeSelection"
+                :items="themeOptions"
+                item-title="title"
+                item-value="value"
+                :label="$t('theme.label')"
+                :hint="$t('profile.themeHelp')"
+                persistent-hint
+                variant="outlined"
+                class="mt-6"
+                @update:model-value="updateTheme"
+              ></v-select>
+              <v-divider class="my-6"></v-divider>
+              <v-checkbox
+                v-model="authStore.showWatchlistOnMainPage"
+                :label="$t('profile.showMyWatchlist')"
+                @update:model-value="changeWatchlistVisibilityOnMainPage"
+              ></v-checkbox>
               <v-btn color="error" variant="text" class="px-0 mt-4" @click="deleteUser()">
                 {{ $t('profile.deleteAccount') }}
               </v-btn>

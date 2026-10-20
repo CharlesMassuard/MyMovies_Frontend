@@ -193,33 +193,33 @@ watch(() => personId.value, () => {
               <h3 class="text-h6 font-weight-bold mb-4">{{ $t('person.personalInfo') }}</h3>
               
               <div class="info-item mb-4" v-if="personDetails.known_for_department">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.job') }}</div>
+                <div class="text-caption font-weight-bold text-uppercase text-medium-emphasis">{{ $t('person.job') }}</div>
                 <div class="text-body-1 font-weight-medium">{{ personDetails.known_for_department }}</div>
               </div>
 
               <div class="info-item mb-4" v-if="personDetails.gender">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.gender') }}</div>
+                <div class="text-caption font-weight-bold text-uppercase text-medium-emphasis">{{ $t('person.gender') }}</div>
                 <div class="text-body-1 font-weight-medium">{{ getGender(personDetails.gender) }}</div>
               </div>
 
               <div class="info-item mb-4" v-if="personDetails.birthday">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.birth') }}</div>
+                <div class="text-caption font-weight-bold text-uppercase text-medium-emphasis">{{ $t('person.birth') }}</div>
                 <div class="text-body-1 font-weight-medium">
                   {{ formatDate(personDetails.birthday) }}
-                  <span v-if="!personDetails.deathday" class="text-grey-darken-1 text-body-2"><br>({{ calculateAge(personDetails.birthday) }} {{ $t('common.yearsOld') }})</span>
+                  <span v-if="!personDetails.deathday" class="text-medium-emphasis text-body-2"><br>({{ calculateAge(personDetails.birthday) }} {{ $t('common.yearsOld') }})</span>
                 </div>
               </div>
 
               <div class="info-item mb-4" v-if="personDetails.deathday">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.death') }}</div>
+                <div class="text-caption font-weight-bold text-uppercase text-medium-emphasis">{{ $t('person.death') }}</div>
                 <div class="text-body-1 font-weight-medium">
                   {{ formatDate(personDetails.deathday) }}
-                  <span class="text-grey-darken-1 text-body-2"><br>({{ calculateAge(personDetails.birthday, personDetails.deathday) }} {{ $t('common.yearsOld') }})</span>
+                  <span class="text-medium-emphasis text-body-2"><br>({{ calculateAge(personDetails.birthday, personDetails.deathday) }} {{ $t('common.yearsOld') }})</span>
                 </div>
               </div>
 
               <div class="info-item" v-if="personDetails.place_of_birth">
-                <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1">{{ $t('person.birthPlace') }}</div>
+                <div class="text-caption font-weight-bold text-uppercase text-medium-emphasis">{{ $t('person.birthPlace') }}</div>
                 <div class="text-body-1 font-weight-medium">{{ personDetails.place_of_birth }}</div>
               </div>
             </v-card-text>
@@ -248,7 +248,7 @@ watch(() => personId.value, () => {
                 <v-icon end>{{ showFullBio ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
               </v-btn>
             </div>
-            <p v-else class="text-grey-darken-1 italic">{{ $t('person.noBiography') }}</p>
+            <p v-else class="text-medium-emphasis italic">{{ $t('person.noBiography') }}</p>
           </div>
 
           <!--Connu-pour-->
@@ -270,7 +270,7 @@ watch(() => personId.value, () => {
                   ></v-img>
                   <v-card-text class="pa-3">
                     <p class="font-weight-bold mb-1 text-truncate text-body-2">{{ media.title || media.name }}</p>
-                    <p class="text-caption text-grey-darken-1 text-truncate" v-if="media.character">{{ media.character }}</p>
+                    <p class="text-caption text-medium-emphasis text-truncate" v-if="media.character">{{ media.character }}</p>
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -309,7 +309,7 @@ watch(() => personId.value, () => {
                           {{ media.title || media.name }}
                         </v-list-item-title>
                         
-                        <v-list-item-subtitle class="text-body-2 text-grey-darken-2 d-flex align-center flex-wrap ga-2">
+                        <v-list-item-subtitle class="text-body-2 text-medium-emphasis d-flex align-center flex-wrap ga-2">
                           <v-chip size="x-small" :color="media.media_type === 'tv' ? '#8C52FF' : 'grey-darken-3'" variant="flat" class="text-white font-weight-bold">
                             {{ media.media_type === 'tv' ? $t('common.series') : $t('common.movie') }}
                           </v-chip>
@@ -338,7 +338,7 @@ watch(() => personId.value, () => {
 
 <style scoped>
 .person-page {
-  background-color: #fcfcfc;
+  background-color: var(--app-background);
   min-height: 100vh;
   position: relative;
 }
@@ -368,7 +368,7 @@ watch(() => personId.value, () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(252,252,252,0) 0%, rgba(252,252,252,1) 100%);
+  background: linear-gradient(to bottom, transparent 0%, var(--app-background) 100%);
 }
 
 .content-container {
@@ -385,8 +385,8 @@ watch(() => personId.value, () => {
 }
 
 .profile-card {
-  background: white;
-  border: 1px solid rgba(0,0,0,0.05);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
 }
 
 .tracking-tight {
@@ -396,7 +396,7 @@ watch(() => personId.value, () => {
 .biography-text {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #444;
+  color: var(--v-theme-on-background);
   white-space: pre-line;
   transition: all 0.3s ease;
 }
@@ -416,7 +416,7 @@ watch(() => personId.value, () => {
   left: 0;
   width: 100%;
   height: 40px;
-  background: linear-gradient(to bottom, rgba(252,252,252,0), rgba(252,252,252,1));
+  background: linear-gradient(to bottom, rgba(15,16,21,0), var(--app-background));
 }
 
 .overflow-x-auto {
@@ -437,7 +437,7 @@ watch(() => personId.value, () => {
 .media-card {
   cursor: pointer;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
-  background: white;
+  background: var(--app-surface);
 }
 .media-card:hover {
   transform: translateY(-6px);
@@ -445,8 +445,8 @@ watch(() => personId.value, () => {
 }
 
 .border-card {
-  border: 1px solid rgba(0,0,0,0.05);
-  background: white;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
 }
 
 .filmography-item {
