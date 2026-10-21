@@ -3,6 +3,7 @@
     import { useI18n } from 'vue-i18n';
     import { useAuthStore } from '../stores/auth';
     import axios  from 'axios';
+    import { getApiErrorMessage } from '../utils/apiError';
     import router from '../router';
     import ConfirmationDialog from '../components/ConfirmationDialog.vue';
     import i18n, { languagePreference, setLanguagePreference } from '../i18n';
@@ -107,7 +108,10 @@
         dialogPseudo.value = false;
       } catch (error) {
         console.error(error);
-        errorMessage.value = error.response?.data?.message || t('profile.updateError');
+        errorMessage.value = getApiErrorMessage(error, {
+          network: t('auth.networkError'),
+          generic: t('profile.updateError')
+        });
       }
     }
 
@@ -151,7 +155,10 @@
         snackbar.value = true;
       } catch (error) {
         console.error(error);
-        errorMessage.value = error.response?.data?.message || t('profile.updateError');
+        errorMessage.value = getApiErrorMessage(error, {
+          network: t('auth.networkError'),
+          generic: t('profile.updateError')
+        });
       }
     }
 
@@ -191,11 +198,10 @@
         snackbar.value = true;
       } catch (error) {
         console.error(error);
-        if (error.response && error.response.status === 400) {
-          errorMessage.value = error.response?.data?.message || t('profile.currentPasswordError');
-        } else {
-          errorMessage.value = error.response?.data?.message || t('profile.changePasswordError');
-        }
+        errorMessage.value = getApiErrorMessage(error, {
+          network: t('auth.networkError'),
+          generic: t('profile.changePasswordError')
+        });
       }
     }
 

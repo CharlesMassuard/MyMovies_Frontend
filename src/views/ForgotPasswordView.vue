@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { useI18n } from 'vue-i18n';
+import { getApiErrorMessage } from '../utils/apiError';
 
 //initialisation
 const { t } = useI18n();
@@ -35,7 +36,10 @@ const handleSubmit = async () => {
     await axios.post(`${apiPath}/auth/forgot-password`, { mail: email.value });
     successMessage.value = t('auth.resetLinkSent');
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || t('auth.generic');
+    errorMessage.value = getApiErrorMessage(error, {
+      network: t('auth.networkError'),
+      generic: t('auth.generic')
+    });
   } finally {
     loading.value = false;
   }

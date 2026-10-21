@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useI18n } from 'vue-i18n';
 import bgImage from '../assets/cinema.webp';
+import { getApiErrorMessage } from '../utils/apiError';
 
 //initialisation
 const authStore = useAuthStore();
@@ -84,7 +85,10 @@ const handleSubmit = async () => {
       router.push('/');
     }
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || t('auth.generic');
+    errorMessage.value = getApiErrorMessage(error, {
+      network: t('auth.networkError'),
+      generic: t('auth.generic')
+    });
   } finally {
     loading.value = false;
   }

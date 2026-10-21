@@ -48,8 +48,12 @@ axios.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config
         const authStore = useAuthStore()
+        const isAuthRequest = originalRequest?.url?.includes('/auth/login')
+            || originalRequest?.url?.includes('/auth/register')
+            || originalRequest?.url?.includes('/auth/forgot-password')
+            || originalRequest?.url?.includes('/auth/reset-password')
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !isAuthRequest && !originalRequest._retry) {
             if (isRefreshing) {
                 return new Promise(function(resolve, reject) {
                     failedQueue.push({ resolve, reject })
