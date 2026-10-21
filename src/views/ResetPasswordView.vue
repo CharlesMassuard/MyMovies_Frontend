@@ -18,6 +18,7 @@ const showPassword = ref(false);
 const password = ref('');
 const confirmPassword = ref('');
 const token = ref('');
+const confirmPasswordField = ref(null);
 
 //recuperationdutokendanslurl
 onMounted(() => {
@@ -32,6 +33,16 @@ const rules = {
   required: v => !!v || t('auth.requiredField'),
   password: v => (v && v.length >= 6) || t('auth.passwordLength'),
   match: v => v === password.value || t('auth.passwordsDoNotMatch')
+};
+
+//gestiondufocus
+const focusField = fieldInstance => {
+  if (fieldInstance?.focus) {
+    fieldInstance.focus();
+  } else {
+    const input = fieldInstance?.$el?.querySelector('input');
+    if (input) input.focus();
+  }
 };
 
 //soumission
@@ -116,6 +127,7 @@ const handleSubmit = async () => {
               color="#8C52FF"
               :rules="[rules.required, rules.password]"
               class="mb-2"
+              @keydown.enter.prevent="focusField(confirmPasswordField)"
             ></v-text-field>
 
             <v-text-field
@@ -127,6 +139,8 @@ const handleSubmit = async () => {
               color="#8C52FF"
               :rules="[rules.required, rules.match]"
               class="mb-6"
+              ref="confirmPasswordField"
+              @keydown.enter.prevent="handleSubmit"
             ></v-text-field>
 
             <v-btn

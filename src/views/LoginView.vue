@@ -17,6 +17,8 @@ const loading = ref(false);
 const showPassword = ref(false);
 const errorMessage = ref('');
 const formRef = ref(null);
+const emailField = ref(null);
+const passwordField = ref(null);
 
 //donnees
 const formData = ref({
@@ -41,6 +43,16 @@ const toggleMode = () => {
   isLogin.value = !isLogin.value;
   errorMessage.value = '';
   formRef.value?.resetValidation();
+};
+
+//gestiondufocus
+const focusField = fieldInstance => {
+  if (fieldInstance?.focus) {
+    fieldInstance.focus();
+  } else {
+    const input = fieldInstance?.$el?.querySelector('input');
+    if (input) input.focus();
+  }
 };
 
 //soumission
@@ -113,6 +125,7 @@ const handleSubmit = async () => {
                 color="#8C52FF"
                 :rules="[rules.required]"
                 class="mb-2"
+                @keydown.enter.prevent="focusField(emailField)"
               ></v-text-field>
             </v-slide-y-transition>
 
@@ -125,6 +138,8 @@ const handleSubmit = async () => {
               color="#8C52FF"
               :rules="[rules.required, rules.email]"
               class="mb-2"
+              ref="emailField"
+              @keydown.enter.prevent="focusField(passwordField)"
             ></v-text-field>
 
             <v-text-field
@@ -138,6 +153,8 @@ const handleSubmit = async () => {
               color="#8C52FF"
               :rules="[rules.required, rules.password]"
               class="mb-2"
+              ref="passwordField"
+              @keydown.enter.prevent="handleSubmit"
             ></v-text-field>
 
             <div v-if="isLogin" class="d-flex justify-end mb-6">
