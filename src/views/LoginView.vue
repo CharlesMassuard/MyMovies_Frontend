@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useI18n } from 'vue-i18n';
+import bgImage from '../assets/cinema.webp';
 
 //initialisation
 const authStore = useAuthStore();
@@ -91,7 +92,10 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <v-container class="fill-height bg-grey-darken-4" fluid>
+
+  <div class="page-background" :style="{ backgroundImage: `url(${bgImage})` }"></div>
+
+  <v-container class="fill-height" fluid>
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="5" lg="4">
         
@@ -189,3 +193,27 @@ const handleSubmit = async () => {
     </v-row>
   </v-container>
 </template>
+
+<style scoped>
+.page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    /*onretirelaici*/
+    background-size: cover;
+    background-position: center;
+    /*leflouetunebaissedeluminosite*/
+    filter: blur(6px) brightness(0.6);
+    /*evitelesbordstransparents*/
+    transform: scale(1.05);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.v-container {
+    position: relative;
+    z-index: 1;
+}
+</style>
