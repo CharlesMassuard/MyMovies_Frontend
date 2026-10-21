@@ -9,6 +9,8 @@ import ProfilView from '../views/ProfilView.vue';
 import LegalNoticeView from '../views/LegalNoticeView.vue';
 import PrivacyPolicyView from '../views/PrivacyPolicyView.vue';
 import SerieDetailsView from '../views/SerieDetailsView.vue';
+import ForgotPasswordView from '../views/ForgotPasswordView.vue';
+import ResetPasswordView from '../views/ResetPasswordView.vue';
 
 const routes = [
     {
@@ -65,6 +67,18 @@ const routes = [
       name: 'privacyPolicy',
       component: PrivacyPolicyView,
       meta: { public: true }
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgotPassword',
+      component: ForgotPasswordView,
+      meta: { public: true, hideHeader: true, hideFooter: true }
+    },
+    {
+      path: '/reset-password',
+      name: 'resetPassword',
+      component: ResetPasswordView,
+      meta: { public: true, hideHeader: true, hideFooter: true }
     },
     //404
     {
