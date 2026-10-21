@@ -3,7 +3,10 @@ import { useRouter } from 'vue-router';
 //on-reutilise-la-meme-image-de-fond-que-le-login
 import bgImage from '../assets/cinema.webp';
 
+import { useI18n } from 'vue-i18n';
+
 const router = useRouter();
+const { t } = useI18n();
 
 //fonction-pour-verifier-si-la-maintenance-est-terminee
 const checkStatus = () => {
@@ -33,14 +36,11 @@ const checkStatus = () => {
           ></v-icon>
 
           <h1 class="text-h4 text-sm-h3 font-weight-black mb-4">
-            De retour très vite !
+            {{ t('maintenance.title') }}
           </h1>
 
           <p class="text-body-1 mb-8 opacity-80" style="line-height: 1.6;">
-            <b>MyMovies</b> est actuellement en cours de maintenance. 
-            Nous mettons à jour notre infrastructure pour vous offrir une expérience encore plus fluide et de nouvelles fonctionnalités.
-            <br><br>
-            Merci de votre patience !
+            {{ t('maintenance.message') }}
           </p>
 
           <!--bouton-de-rafraichissement-->
@@ -53,7 +53,7 @@ const checkStatus = () => {
             prepend-icon="mdi-refresh"
             @click="checkStatus"
           >
-            Vérifier le statut
+            {{ t('maintenance.checkStatus') }}
           </v-btn>
 
         </v-card>
