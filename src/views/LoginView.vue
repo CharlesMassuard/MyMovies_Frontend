@@ -4,184 +4,220 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useI18n } from 'vue-i18n';
+import bgImage from '../assets/cinema.webp';
+import { getApiErrorMessage } from '../utils/apiError';
 
+//initialisation
 const authStore = useAuthStore();
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const isLogin = ref(true);  
+
+//etats
+const isLogin = ref(true);
 const loading = ref(false);
-const email = ref('');
-const password = ref('');
-const username = ref('');
-const usernameField = ref(null);
+const showPassword = ref(false);
+const errorMessage = ref('');
+const formRef = ref(null);
 const emailField = ref(null);
 const passwordField = ref(null);
 
-const emailRules = [
-  v => !!v || t('auth.emailRequired'),
-  v => /.+@.+\..+/.test(v) || t('auth.emailInvalid')
-];
-const passwordRules = [
-  v => !!v || t('auth.passwordRequired'),
-  v => v.length >= 6 || t('auth.passwordLength')
-];
-
-onMounted(() => {
-  if (route.path === '/register') {
-    isLogin.value = false;
-  } else {
-    isLogin.value = true;
-  }
+//donnees
+const formData = ref({
+  username: '',
+  email: '',
+  password: ''
 });
 
-const focusEmail = () => {
-    emailField.value?.focus?.();
+//regles
+const rules = {
+  required: v => !!v || t('auth.requiredField'),
+  email: v => /.+@.+\..+/.test(v) || t('auth.invalidEmail'),
+  password: v => (v && v.length >= 6) || t('auth.passwordLength')
 };
 
-const focusPassword = () => {
-    passwordField.value?.focus?.();
+onMounted(() => {
+  isLogin.value = route.path !== '/register';
+});
+
+//bascule
+const toggleMode = () => {
+  isLogin.value = !isLogin.value;
+  errorMessage.value = '';
+  formRef.value?.resetValidation();
 };
 
-const errorMessage = ref('');
+//gestiondufocus
+const focusField = fieldInstance => {
+  if (fieldInstance?.focus) {
+    fieldInstance.focus();
+  } else {
+    const input = fieldInstance?.$el?.querySelector('input');
+    if (input) input.focus();
+  }
+};
 
+//soumission
 const handleSubmit = async () => {
+  const { valid } = await formRef.value.validate();
+  if (!valid) return;
 
-    let mail = email.value;
-    let pwd = password.value;
+  loading.value = true;
+  errorMessage.value = '';
 
-    if(!mail || !pwd) {
-        errorMessage.value = t('auth.emailAndPasswordRequired');
-        return;
-    }
-    if(!isLogin.value && !username.value) {
-        errorMessage.value = t('auth.usernameRequired');
-        return;
-    }
+  const apiPath = import.meta.env.VITE_API_BASE_URL;
+  const endpoint = isLogin.value ? '/auth/login' : '/auth/register';
 
-    const emailPattern = /.+@.+\..+/;
-    if (!emailPattern.test(mail)) {
-        errorMessage.value = t('auth.invalidEmail');
-        return;
-    }
-    if (pwd.length < 6) {
-        errorMessage.value = t('auth.passwordLength');
-        return;
-    }
+  //payload
+  const payload = {
+    mail: formData.value.email,
+    password: formData.value.password,
+    ...(isLogin.value ? {} : { pseudo: formData.value.username })
+  };
 
-    loading.value = true;
-    errorMessage.value = '';
+  try {
+    const response = await axios.post(apiPath + endpoint, payload);
+    authStore.login(response.data.token, response.data.refreshToken, response.data.user);
     
-    const apiPath = import.meta.env.VITE_API_BASE_URL;
-    const endpoint = isLogin.value ? '/auth/login' : '/auth/register';
-    
-    const payload = {
-        mail: mail,
-        password: pwd,
-        ...(isLogin.value ? {} : { pseudo: username.value })
-    };
-
-    try {
-        const response = await axios.post(apiPath + endpoint, payload);
-        authStore.login(response.data.token, response.data.refreshToken, response.data.user)
-        if(route.query.redirect) {
-            router.push(route.query.redirect);
-            return;
-        }
-        router.push('/');
-    } catch (error) {
-        if (error.response) {
-            errorMessage.value = error.response.data.message || t('auth.generic');
-        } else {
-            errorMessage.value = t('auth.generic');
-        }
-    } finally {
-        loading.value = false;
+    if (route.query.redirect) {
+      router.push(route.query.redirect);
+    } else {
+      router.push('/');
     }
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error, {
+      network: t('auth.networkError'),
+      generic: t('auth.generic')
+    });
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
 <template>
-<v-container class="fill-height" fluid>
+
+  <div class="page-background" :style="{ backgroundImage: `url(${bgImage})` }"></div>
+
+  <v-container class="fill-height" fluid>
     <v-row align="center" justify="center">
-    <v-col cols="12" sm="8" md="4">
-        <v-alert
+      <v-col cols="12" sm="8" md="5" lg="4">
+        
+        <v-card class="elevation-12 pa-6 pa-sm-8" rounded="xl" theme="dark">
+          
+          <div class="text-center mb-8">
+            <v-icon icon="mdi-movie-open-play" color="#8C52FF" size="72" class="mb-3"></v-icon>
+            <h1 class="text-h4 font-weight-black mb-1">MyMovies</h1>
+          </div>
+
+          <v-alert
             v-if="errorMessage"
             type="error"
-            :title="$t('auth.authError')"
-            :text="errorMessage"
             variant="tonal"
             closable
-            class="mb-5"
+            class="mb-6"
             @click:close="errorMessage = ''"
-        ></v-alert>
+          >
+            {{ errorMessage }}
+          </v-alert>
 
-        <v-card class="elevation-12" :loading="loading" rounded="lg">
-        <v-toolbar color="#8C52FF" dark flat>
-            <v-toolbar-title>
-            {{ isLogin ? $t('auth.login') : $t('auth.register') }}
-            </v-toolbar-title>
-        </v-toolbar>
-        
-        <v-card-text>
-            <v-form @submit.prevent="handleSubmit">
-            <v-text-field
+          <v-form ref="formRef" @submit.prevent="handleSubmit">
+            
+            <v-slide-y-transition>
+              <v-text-field
                 v-if="!isLogin"
-                v-model="username"
+                v-model="formData.username"
                 :label="$t('auth.username')"
-                prepend-icon="mdi-account"
-                type="text"
-                ref="usernameField"
-                @keydown.enter.prevent="focusEmail"
-                required
-            ></v-text-field>
-
-            <v-text-field
-                v-model="email"
-                :label="$t('auth.email')"
-                prepend-icon="mdi-email"
-                type="email"
-                :rules="emailRules"
-                ref="emailField"
-                @keydown.enter.prevent="focusPassword"
-                required
-            ></v-text-field>
-
-            <v-text-field
-                v-model="password"
-                :label="$t('auth.password')"
-                prepend-icon="mdi-lock"
-                type="password"
-                :rules="passwordRules"
-                ref="passwordField"
-                @keydown.enter.prevent="handleSubmit"
-                required
-            ></v-text-field>
-
-            <v-card-actions class="flex-column">
-                <v-btn
+                prepend-inner-icon="mdi-account"
+                variant="outlined"
                 color="#8C52FF"
-                block
-                type="submit"
-                :loading="loading"
-                :disabled="email === '' || password === '' || (!isLogin && username === '')"
-                >
-                {{ isLogin ? $t('auth.submitLogin') : $t('auth.submitRegister') }}
-                </v-btn>
-                
-                <v-btn
-                variant="text"
-                class="mt-2"
-                type="button"
-                @click="isLogin = !isLogin"
-                >
+                :rules="[rules.required]"
+                class="mb-2"
+                @keydown.enter.prevent="focusField(emailField)"
+              ></v-text-field>
+            </v-slide-y-transition>
+
+            <v-text-field
+              v-model="formData.email"
+              :label="$t('auth.email')"
+              prepend-inner-icon="mdi-email"
+              type="email"
+              variant="outlined"
+              color="#8C52FF"
+              :rules="[rules.required, rules.email]"
+              class="mb-2"
+              ref="emailField"
+              @keydown.enter.prevent="focusField(passwordField)"
+            ></v-text-field>
+
+            <v-text-field
+              v-model="formData.password"
+              :label="$t('auth.password')"
+              prepend-inner-icon="mdi-lock"
+              :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+              @click:append-inner="showPassword = !showPassword"
+              :type="showPassword ? 'text' : 'password'"
+              variant="outlined"
+              color="#8C52FF"
+              :rules="[rules.required, rules.password]"
+              class="mb-2"
+              ref="passwordField"
+              @keydown.enter.prevent="handleSubmit"
+            ></v-text-field>
+
+            <div v-if="isLogin" class="d-flex justify-end mb-6">
+              <router-link to="/forgot-password" class="text-caption font-weight-medium text-decoration-none" style="color: #8C52FF;">
+                {{ $t('auth.forgotPassword') }}
+              </router-link>
+            </div>
+
+            <v-btn
+              color="#8C52FF"
+              size="x-large"
+              block
+              type="submit"
+              :loading="loading"
+              class="mb-6 font-weight-bold text-none"
+              rounded="lg"
+              elevation="4"
+            >
+              {{ isLogin ? $t('auth.submitLogin') : $t('auth.submitRegister') }}
+            </v-btn>
+
+            <div class="text-center">
+              <a href="#" @click.prevent="toggleMode" class="text-body-2 font-weight-medium text-decoration-none" style="color: #8C52FF;">
                 {{ isLogin ? $t('auth.switchToRegister') : $t('auth.switchToLogin') }}
-                </v-btn>
-            </v-card-actions>
-            </v-form>
-        </v-card-text>
+              </a>
+            </div>
+
+          </v-form>
         </v-card>
-    </v-col>
+        
+      </v-col>
     </v-row>
-</v-container>
+  </v-container>
 </template>
+
+<style scoped>
+.page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    /*onretirelaici*/
+    background-size: cover;
+    background-position: center;
+    /*leflouetunebaissedeluminosite*/
+    filter: blur(6px) brightness(0.6);
+    /*evitelesbordstransparents*/
+    transform: scale(1.05);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.v-container {
+    position: relative;
+    z-index: 1;
+}
+</style>

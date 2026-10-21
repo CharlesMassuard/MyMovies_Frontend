@@ -56,7 +56,7 @@ export const applyThemePreference = (preference = getThemePreference()) => {
   const normalizedPreference = validThemePreferences.includes(preference) ? preference : 'system'
   const activeTheme = normalizedPreference === 'system' ? getSystemTheme() : normalizedPreference
 
-  vuetify.theme.global.name.value = activeTheme
+  vuetify.theme.change(activeTheme)
   document.documentElement.dataset.theme = activeTheme
 }
 
