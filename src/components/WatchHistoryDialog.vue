@@ -2,17 +2,19 @@
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
+//Import de la modale de confirmation
+import ConfirmationDialog from './ConfirmationDialog.vue';
 
 const props = defineProps({
   modelValue: Boolean,
   mediaId: [Number, String],
   mediaType: {
     type: String,
-    default: 'movie' // Peut être 'movie' ou 'serie'
+    default: 'movie'
   },
   defaultTab: {
     type: String,
-    default: 'list' // 'list' ou 'add'
+    default: 'list'
   }
 });
 
@@ -24,11 +26,14 @@ const isLoading = ref(false);
 const historyList = ref([]);
 const showAddForm = ref(false);
 
-// State du formulaire
 const menuDate = ref(false);
 const dateObj = ref(new Date());
 const newRating = ref(5);
 const newComment = ref('');
+
+//État pour la suppression
+const dialogConfirmDelete = ref(false);
+const historyIdToDelete = ref(null);
 
 const displayDate = computed(() => {
   if (!dateObj.value) return '';
@@ -62,7 +67,6 @@ const submitRewatch = async () => {
     return;
   }
 
-  // Formatage propre de la date en YYYY-MM-DD pour l'API
   const d = new Date(dateObj.value);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -81,15 +85,40 @@ const submitRewatch = async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    // Reset du formulaire et rafraîchissement
     showAddForm.value = false;
     newComment.value = '';
     newRating.value = 5;
     dateObj.value = new Date();
     await fetchHistory();
-    emit('history-updated'); // Va forcer la vue parente à recalculer le nb de visionnages
+    emit('history-updated');
   } catch (error) {
     console.error("Erreur lors de l'ajout", error);
+  }
+};
+
+const promptDelete = (id) => {
+  historyIdToDelete.value = id;
+  dialogConfirmDelete.value = true;
+};
+
+const executeDelete = async () => {
+  if (!historyIdToDelete.value) return;
+  
+  try {
+    const token = localStorage.getItem('user_token');
+    const endpoint = props.mediaType === 'movie' ? 'movies' : 'series';
+    
+    await axios.delete(`${API_BASE_URL}/user/${endpoint}/rewatch/${props.mediaId}/${historyIdToDelete.value}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    await fetchHistory();
+    emit('history-updated');
+  } catch (error) {
+    console.error("Erreur lors de la suppression", error);
+  } finally {
+    dialogConfirmDelete.value = false;
+    historyIdToDelete.value = null;
   }
 };
 
@@ -112,10 +141,8 @@ const formatDate = (dateString) => {
 
 <template>
   <v-dialog :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" width="450px" scrollable>
-    <!-- Utilisation de d-flex et flex-column pour gérer le contenu scrollable avec footer fixe -->
     <v-card class="rounded-xl d-flex flex-column" max-height="85vh" style="overflow: hidden;">
       
-      <!-- HEADER FIXE -->
       <div class="d-flex align-center justify-center pa-4 shrink position-relative">
         <v-card-title class="pa-0 font-weight-bold">
           {{ showAddForm ? 'Ajouter un visionnage' : 'Historique de visionnage' }}
@@ -132,15 +159,12 @@ const formatDate = (dateString) => {
 
       <v-divider></v-divider>
 
-      <!-- CORPS SCROLLABLE -->
       <v-card-text class="pa-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
         
-        <!-- Loader -->
         <div v-if="isLoading" class="d-flex justify-center my-6">
           <v-progress-circular indeterminate color="#8C52FF"></v-progress-circular>
         </div>
 
-        <!-- Liste des visionnages -->
         <div v-else-if="!showAddForm">
           <div v-if="historyList.length === 0" class="text-center text-grey my-6">
             Aucun historique disponible.
@@ -150,11 +174,24 @@ const formatDate = (dateString) => {
             <v-timeline-item v-for="(item, index) in historyList" :key="index" dot-color="#8C52FF" size="x-small">
               <div class="d-flex flex-column bg-surface-variant pa-3 rounded-lg">
                 <div class="d-flex justify-space-between align-center mb-2">
-                    <strong class="text-body-1">{{ formatDate(item.dateViewed) }}</strong>
-                    <v-chip size="small" color="#8C52FF" variant="flat" class="text-white font-weight-bold px-3 ml-3" elevation="0">
-                        <v-icon start size="small" class="mr-1">mdi-star</v-icon>
-                        <span style="font-size: 0.85rem;">{{ item.rating }}/10</span>
+                  <strong class="text-body-1">{{ formatDate(item.dateViewed) }}</strong>
+                  <div class="d-flex align-center ga-2">
+                    <!-- Note en premier -->
+                    <v-chip size="small" color="#8C52FF" variant="flat" class="text-white font-weight-bold px-3 ml-2" elevation="0">
+                      <v-icon start size="small" class="mr-1">mdi-star</v-icon>
+                      <span style="font-size: 0.85rem;">{{ item.rating }}/10</span>
                     </v-chip>
+                    <!-- Poubelle à droite -->
+                    <v-btn
+                      v-if="!item.main"
+                      icon="mdi-trash-can-outline"
+                      size="small"
+                      variant="tonal"
+                      color="error"
+                      density="comfortable"
+                      @click="promptDelete(item.id)"
+                    ></v-btn>
+                  </div>
                 </div>
                 <p v-if="item.comment && item.comment !== 'NO_COMMENT'" class="text-body-2 text-grey-lighten-1 mb-0 italic">
                   "{{ item.comment }}"
@@ -167,9 +204,7 @@ const formatDate = (dateString) => {
           </v-timeline>
         </div>
 
-        <!-- Formulaire d'ajout -->
         <div v-else class="mt-2">
-          <!-- Nouveau calendrier basé sur Vuetify -->
           <v-menu
             v-model="menuDate"
             :close-on-content-click="false"
@@ -245,9 +280,7 @@ const formatDate = (dateString) => {
 
       <v-divider v-if="!isLoading"></v-divider>
 
-      <!-- FOOTER FIXE (Les boutons seront toujours visibles, indépendamment du scroll) -->
       <div v-if="!isLoading" class="pa-4 shrink bg-background">
-        <!-- Boutons si on est sur la Liste -->
         <template v-if="!showAddForm">
           <v-btn
             block
@@ -263,7 +296,6 @@ const formatDate = (dateString) => {
           </v-btn>
         </template>
         
-        <!-- Boutons si on est sur le Formulaire -->
         <template v-else>
           <v-btn
             block
@@ -275,7 +307,6 @@ const formatDate = (dateString) => {
           >
             {{ $t('common.validate') }}
           </v-btn>
-          <!-- Bouton retour (si on vient de la liste) -->
           <v-btn
             v-if="historyList.length > 0"
             block
@@ -292,6 +323,14 @@ const formatDate = (dateString) => {
       
     </v-card>
   </v-dialog>
+
+  <!--Intégration de la modale de confirmation-->
+  <ConfirmationDialog 
+    v-model="dialogConfirmDelete" 
+    title="Supprimer le visionnage" 
+    message="Êtes-vous sûr de vouloir supprimer ce visionnage de votre historique ?" 
+    @confirm="executeDelete" 
+  />
 </template>
 
 <style scoped>
