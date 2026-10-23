@@ -10,6 +10,7 @@ import AuthDialog from '../components/AuthDialog.vue';
 import DateDialog from '../components/DateDialog.vue';
 import RatingDialog from '../components/RatingDialog.vue';
 import TrailerDialog from '../components/TrailerDialog.vue';
+import WatchHistoryDialog from '../components/WatchHistoryDialog.vue';
 
 // Nouveaux composants UI Extraits
 import MediaBanner from '../components/MediaBanner.vue';
@@ -39,7 +40,10 @@ const dialogConfirmation = ref(false);
 const dialogDate = ref(false);
 const dialogNote = ref(false);
 const dialogAuth = ref(false);
+const dialogHistory = ref(false);
+
 const authMessage = ref("");
+const historyTab = ref("list"); // 'list' ou 'add'
 
 const userRating = ref(0);
 const userComment = ref("");
@@ -58,6 +62,8 @@ const allActions = computed(() => [
   { id: 'TO_WATCH', text: t('common.watch'), icon: 'mdi-clock-outline' },
   { id: 'WATCHING', text: t('common.watching'), icon: 'mdi-play-circle-outline' },
   { id: 'WATCHED', text: t('common.watched'), icon: 'mdi-check-all' },
+  { id: 'HISTORY', text: t('common.history'), icon: 'mdi-history' },
+  { id: 'ADD_HISTORY', text: t('common.addHistory'), icon: 'mdi-plus-box-multiple' },
   { id: 'DATE', text: t('media.changeDate'), icon: 'mdi-calendar' },
   { id: 'DELETE', text: t('media.deleteFromList'), icon: 'mdi-delete', color: 'error' }
 ]);
@@ -69,7 +75,7 @@ const itemsStatus = computed(() => {
   switch (statusUserMovie.value) {
     case 'TO_WATCH': return allActions.value.filter(i => ['WATCHING', 'WATCHED', 'DELETE'].includes(i.id));
     case 'WATCHING': return allActions.value.filter(i => ['TO_WATCH', 'WATCHED', 'DELETE'].includes(i.id));
-    case 'WATCHED': return allActions.value.filter(i => ['TO_WATCH', 'WATCHING', 'DATE', 'DELETE'].includes(i.id));
+    case 'WATCHED': return allActions.value.filter(i => ['HISTORY', 'ADD_HISTORY', 'TO_WATCH', 'WATCHING', 'DATE', 'DELETE'].includes(i.id));
     default: return [];
   }
 });
@@ -155,14 +161,29 @@ const fetchStatusUserMovie = async () => {
       const watchedResponse = await axios.get(`${API_BASE_URL}/user/movies/watched-date/${movieId.value}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      let baseText = t('media.watchedLongAgo');
       if (watchedResponse.data && !String(watchedResponse.data).startsWith("1970-01-01")) {
         const d = new Date(watchedResponse.data);
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
-        textVuAvecDate.value = `${t('media.watchedOn')} ${day}/${month}/${d.getFullYear()}`;
-      } else {
-        textVuAvecDate.value = t('media.watchedLongAgo');
+        baseText = `${t('media.watchedOn')} ${day}/${month}/${d.getFullYear()}`;
       }
+
+      // Fetch history to get the total watch count
+      try {
+        const historyResponse = await axios.get(`${API_BASE_URL}/user/movies/history/${movieId.value}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const count = historyResponse.data.length;
+        if (count > 1) {
+          baseText += ` (${count} ${t('media.watchings')})`;
+        }
+      } catch (e) {
+        console.error("Erreur récupération historique", e);
+      }
+      
+      textVuAvecDate.value = baseText;
     }
   } catch (error) { handleAuthError(error); }
 };
@@ -205,8 +226,19 @@ const handleMainButtonClick = () => {
 
 const updateStatus = async (newStatus) => {
   if (!checkAuth(t('auth.mustLogin'))) return;
+  
   if (newStatus === 'DELETE') return (dialogConfirmation.value = true);
   if (newStatus === 'DATE') return (dialogDate.value = true);
+  
+  if (newStatus === 'HISTORY') {
+    historyTab.value = 'list';
+    return (dialogHistory.value = true);
+  }
+  
+  if (newStatus === 'ADD_HISTORY') {
+    historyTab.value = 'add';
+    return (dialogHistory.value = true);
+  }
   
   try {
     const token = localStorage.getItem('user_token');
@@ -218,6 +250,11 @@ const updateStatus = async (newStatus) => {
     }
     await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, payload, { headers: { Authorization: `Bearer ${token}` } });
     statusUserMovie.value = newStatus;
+    
+    // Refresh the status data fully to update history indicators if necessary
+    if (newStatus === 'WATCHED') {
+      await fetchStatusUserMovie();
+    }
   } catch (error) { handleAuthError(error); }
 };
 
@@ -240,8 +277,8 @@ const handleDateConfirm = async (dateData) => {
       dateText = `${t('media.watchedOn')} ${String(dateData.getDate()).padStart(2, '0')}/${String(dateData.getMonth() + 1).padStart(2, '0')}/${dateData.getFullYear()}`;
     }
     await axios.put(`${API_BASE_URL}/user/movies/status/${movieId.value}`, { status: "WATCHED", watchedAt: formattedDate }, { headers: { Authorization: `Bearer ${localStorage.getItem('user_token')}` } });
-    textVuAvecDate.value = dateText;
     statusUserMovie.value = "WATCHED";
+    await fetchStatusUserMovie(); // Refresh for history count integration
   } catch (error) { handleAuthError(error); }
 };
 
@@ -355,6 +392,14 @@ watch(() => movieId.value, () => {
   <RatingDialog v-model="dialogNote" :title="$t('media.rateMovie')" :placeholder="$t('media.reviewMovie')" :initial-rating="userRating" :initial-comment="userComment" @save="saveRating" />
   <AuthDialog v-model="dialogAuth" :message="authMessage" />
   <TrailerDialog v-model="dialogTrailer" :videoKey="trailerKey" />
+  
+  <WatchHistoryDialog 
+    v-model="dialogHistory" 
+    :mediaId="movieId" 
+    mediaType="movie" 
+    :defaultTab="historyTab"
+    @history-updated="fetchStatusUserMovie" 
+  />
 </template>
 
 <style scoped>
