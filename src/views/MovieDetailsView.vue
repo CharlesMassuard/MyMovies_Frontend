@@ -62,8 +62,8 @@ const allActions = computed(() => [
   { id: 'TO_WATCH', text: t('common.watch'), icon: 'mdi-clock-outline' },
   { id: 'WATCHING', text: t('common.watching'), icon: 'mdi-play-circle-outline' },
   { id: 'WATCHED', text: t('common.watched'), icon: 'mdi-check-all' },
-  { id: 'HISTORY', text: 'Historique de visionnage', icon: 'mdi-history' },
-  { id: 'ADD_HISTORY', text: 'Ajouter un visionnage', icon: 'mdi-plus-box-multiple' },
+  { id: 'HISTORY', text: t('common.history'), icon: 'mdi-history' },
+  { id: 'ADD_HISTORY', text: t('common.addHistory'), icon: 'mdi-plus-box-multiple' },
   { id: 'DATE', text: t('media.changeDate'), icon: 'mdi-calendar' },
   { id: 'DELETE', text: t('media.deleteFromList'), icon: 'mdi-delete', color: 'error' }
 ]);
@@ -177,7 +177,7 @@ const fetchStatusUserMovie = async () => {
         });
         const count = historyResponse.data.length;
         if (count > 1) {
-          baseText += ` (${count} visionnages)`;
+          baseText += ` (${count} ${t('media.watchings')})`;
         }
       } catch (e) {
         console.error("Erreur récupération historique", e);

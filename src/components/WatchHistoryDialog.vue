@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
-//Import de la modale de confirmation
+// Import de la modale de confirmation
 import ConfirmationDialog from './ConfirmationDialog.vue';
 
 const props = defineProps({
@@ -31,13 +31,23 @@ const dateObj = ref(new Date());
 const newRating = ref(5);
 const newComment = ref('');
 
-//État pour la suppression
+// État pour la suppression
 const dialogConfirmDelete = ref(false);
 const historyIdToDelete = ref(null);
 
 const displayDate = computed(() => {
   if (!dateObj.value) return '';
   return new Intl.DateTimeFormat(locale.value, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(dateObj.value);
+});
+
+// Propriété calculée pour trouver la date la plus ancienne (visionnage principal)
+const minDateForPicker = computed(() => {
+  if (!historyList.value.length) return null;
+  const mainHistory = historyList.value.find(h => h.main);
+  if (mainHistory && mainHistory.dateViewed) {
+    return new Date(mainHistory.dateViewed);
+  }
+  return null;
 });
 
 const closeDialog = () => {
@@ -145,7 +155,7 @@ const formatDate = (dateString) => {
       
       <div class="d-flex align-center justify-center pa-4 shrink position-relative">
         <v-card-title class="pa-0 font-weight-bold">
-          {{ showAddForm ? 'Ajouter un visionnage' : 'Historique de visionnage' }}
+          {{ showAddForm ? $t('media.addWatchHistory') : $t('media.watchHistory') }}
         </v-card-title>
         <v-btn
           icon="mdi-close"
@@ -167,7 +177,7 @@ const formatDate = (dateString) => {
 
         <div v-else-if="!showAddForm">
           <div v-if="historyList.length === 0" class="text-center text-grey my-6">
-            Aucun historique disponible.
+            {{ $t('media.noHistory') }}
           </div>
           
           <v-timeline v-else density="compact" side="end" class="mb-2" align="start" truncate-line="both">
@@ -197,7 +207,7 @@ const formatDate = (dateString) => {
                   "{{ item.comment }}"
                 </p>
                 <div v-if="item.main" class="text-caption text-grey mt-2">
-                  Premier visionnage
+                  {{ $t('media.firstWatch') }}
                 </div>
               </div>
             </v-timeline-item>
@@ -215,7 +225,7 @@ const formatDate = (dateString) => {
             <template v-slot:activator="{ props }">
               <v-text-field
                 v-model="displayDate"
-                label="Date du visionnage"
+                :label="$t('media.watchDate')"
                 prepend-inner-icon="mdi-calendar"
                 readonly
                 v-bind="props"
@@ -229,6 +239,7 @@ const formatDate = (dateString) => {
               v-model="dateObj"
               color="#8C52FF"
               :max="new Date()"
+              :min="minDateForPicker"
               hide-header
               @update:model-value="menuDate = false"
             ></v-date-picker>
@@ -292,7 +303,7 @@ const formatDate = (dateString) => {
             prepend-icon="mdi-plus"
             @click="showAddForm = true"
           >
-            Ajouter un visionnage
+            {{ $t('media.addWatchHistory') }}
           </v-btn>
         </template>
         
@@ -324,11 +335,11 @@ const formatDate = (dateString) => {
     </v-card>
   </v-dialog>
 
-  <!--Intégration de la modale de confirmation-->
+  <!-- Intégration de la modale de confirmation traduite -->
   <ConfirmationDialog 
     v-model="dialogConfirmDelete" 
-    title="Supprimer le visionnage" 
-    message="Êtes-vous sûr de vouloir supprimer ce visionnage de votre historique ?" 
+    :title="$t('media.deleteHistoryTitle')" 
+    :message="$t('media.deleteHistoryQuestion')" 
     @confirm="executeDelete" 
   />
 </template>
