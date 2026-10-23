@@ -54,6 +54,14 @@ const selectedSeasonInfo = ref(null);
 const loadingSeason = ref(false);
 const activeSeasonNumber = ref(null);
 
+// Propriété calculée pour savoir si la série est déjà sortie
+const isSerieReleased = computed(() => {
+  if (!serieDetails.value.first_air_date) return false;
+  const today = new Date();
+  const releaseDate = new Date(serieDetails.value.first_air_date);
+  return releaseDate <= today;
+});
+
 const textButtonStatus = computed(() => ({
   "WATCHED": { text: textVuAvecDate.value, icon: "mdi-check-all" },
   "WATCHING": { text: t('common.watching'), icon: "mdi-play-circle-outline" },
@@ -72,6 +80,11 @@ const allActions = computed(() => [
 ]);
 
 const itemsStatus = computed(() => {
+  // Si la série n'est pas sortie, on limite les actions à la suppression de la liste
+  if (!isSerieReleased.value) {
+    return allActions.value.filter(i => ['DELETE'].includes(i.id));
+  }
+  
   switch (statusUserSerie.value) {
     case 'TO_WATCH': return allActions.value.filter(i => ['WATCHING', 'WATCHED', 'DELETE'].includes(i.id));
     case 'WATCHING': return allActions.value.filter(i => ['TO_WATCH', 'WATCHED', 'DELETE'].includes(i.id));
@@ -359,7 +372,7 @@ watch(() => serieId.value, () => {
           :textButtonStatus="textButtonStatus"
           :itemsStatus="itemsStatus"
           :displayRating="displayRating"
-          :showRatingButton="true"
+          :showRatingButton="isSerieReleased"
           :trailerKey="trailerKey"
           @main-click="handleMainButtonClick"
           @update-status="updateStatus"
