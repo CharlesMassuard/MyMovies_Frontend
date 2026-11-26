@@ -5,8 +5,8 @@ import vuetify from './plugins/vuetify'
 import './style.css'
 import router from './router'
 import axios from 'axios'
-import { useAuthStore } from './stores/auth'
 import i18n from './i18n'
+import { attachAuthInterceptors } from './api/client'
 
 const pinia = createPinia()
 const app = createApp(App)
@@ -16,100 +16,7 @@ app.use(router)
 app.use(vuetify)
 app.use(i18n)
 
-//Création d'une instance Axios vierge sans intercepteurs
-const axiosRefresh = axios.create()
-
-axios.interceptors.request.use((config) => {
-    const authStore = useAuthStore()
-    config.headers['Accept-Language'] = i18n.global.locale.value
-    if (authStore.token) {
-        config.headers.Authorization = `Bearer ${authStore.token}`
-    }
-    return config
-})
-
-let isRefreshing = false
-let failedQueue = []
-
-const processQueue = (error, token = null) => {
-    failedQueue.forEach(prom => {
-        if (error) {
-            prom.reject(error)
-        } else {
-            prom.resolve(token)
-        }
-    })
-    failedQueue = []
-}
-
-//Gestion du 401 et rafraîchissement transparent
-axios.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config
-        const authStore = useAuthStore()
-        const requestUrl = originalRequest?.url || ''
-        const isAuthRequest = originalRequest?.url?.includes('/auth/login')
-            || originalRequest?.url?.includes('/auth/register')
-            || originalRequest?.url?.includes('/auth/forgot-password')
-            || originalRequest?.url?.includes('/auth/reset-password')
-        const isRefreshRequest = requestUrl.includes('/auth/refresh')
-
-        if (
-            error.response?.status === 401
-            && !isAuthRequest
-            && !isRefreshRequest
-            && authStore.refreshToken
-            && originalRequest
-            && !originalRequest._retry
-        ) {
-            if (isRefreshing) {
-                return new Promise(function(resolve, reject) {
-                    failedQueue.push({ resolve, reject })
-                }).then(token => {
-                    originalRequest.headers['Authorization'] = `Bearer ${token}`
-                    return axios(originalRequest)
-                }).catch(err => Promise.reject(err))
-            }
-
-            originalRequest._retry = true
-            isRefreshing = true
-
-            try {
-                const apiPath = import.meta.env.VITE_API_BASE_URL
-                //Utilisation de l'instance vierge pour ne pas envoyer le token expiré
-                const response = await axiosRefresh.post(`${apiPath}/auth/refresh`, {
-                    refreshToken: authStore.refreshToken
-                }, {
-                    headers: { 'Accept-Language': i18n.global.locale.value }
-                })
-
-                const newToken = response.data.token
-                const newRefreshToken = response.data.refreshToken //Récupère le nouveau refresh token
-
-                //Mise à jour des deux jetons dans le store et le local storage
-                authStore.token = newToken
-                authStore.refreshToken = newRefreshToken
-                localStorage.setItem('user_token', newToken)
-                localStorage.setItem('user_refresh_token', newRefreshToken)
-
-                originalRequest.headers['Authorization'] = `Bearer ${newToken}`
-                processQueue(null, newToken)
-                
-                return axios(originalRequest)
-                
-            } catch (refreshError) {
-                //Si le refresh échoue, on déconnecte et on redirige
-                processQueue(refreshError, null)
-                authStore.logout()
-                router.push('/login')
-                return Promise.reject(refreshError)
-            } finally {
-                isRefreshing = false
-            }
-        }
-        return Promise.reject(error)
-    }
-)
+// Attache le même intercepteur (token + refresh transparent 401) à l'instance axios globale
+attachAuthInterceptors(axios)
 
 app.mount('#app')

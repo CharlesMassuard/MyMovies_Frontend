@@ -1,26 +1,47 @@
 <template>
-  <div>
-    <div class="banner-wrapper bg-grey-darken-4">
-      <v-container class="py-10">
-        <v-row align="center">
-          <v-col cols="12" md="3" class="d-flex justify-center">
-            <v-skeleton-loader type="image" width="300" height="450" class="rounded-lg"></v-skeleton-loader>
-          </v-col>
-          <v-col cols="12" md="9" class="px-md-10">
-            <v-skeleton-loader type="heading" width="300" class="mb-4 bg-transparent"></v-skeleton-loader>
-            <v-skeleton-loader type="text" width="200" class="mb-6 bg-transparent"></v-skeleton-loader>
-            <v-skeleton-loader type="list-item-avatar-two-line" width="300" class="mb-4 bg-transparent"></v-skeleton-loader>
-            <v-skeleton-loader type="paragraph" class="mt-6 bg-transparent"></v-skeleton-loader>
-          </v-col>
-        </v-row>
+  <div class="media-skeleton-page">
+    <!-- Full-Bleed Hero Skeleton -->
+    <div class="hero-skeleton">
+      <v-container class="hero-skeleton-container">
+        <div class="hero-skeleton-inner">
+          <div class="d-flex ga-2 mb-5">
+            <v-skeleton-loader type="chip" width="68" class="bg-transparent" />
+            <v-skeleton-loader type="chip" width="64" class="bg-transparent" />
+            <v-skeleton-loader type="chip" width="110" class="bg-transparent" />
+            <v-skeleton-loader type="chip" width="84" class="bg-transparent" />
+          </div>
+
+          <v-skeleton-loader type="heading" width="380" class="mb-4 bg-transparent" />
+          <v-skeleton-loader type="text" width="320" class="mb-5 bg-transparent" />
+          <v-skeleton-loader type="paragraph" width="540" class="mb-6 bg-transparent" />
+
+          <div class="d-flex ga-3">
+            <v-skeleton-loader type="button" width="190" height="46" class="rounded-lg bg-transparent" />
+            <v-skeleton-loader type="button" width="150" height="46" class="rounded-lg bg-transparent" />
+            <v-skeleton-loader type="button" width="110" height="46" class="rounded-lg bg-transparent" />
+          </div>
+        </div>
       </v-container>
     </div>
-    
-    <v-container class="mt-10 mb-6">
-      <v-skeleton-loader type="heading" width="200" class="mb-6"></v-skeleton-loader>
-      <v-row class="flex-nowrap overflow-hidden pb-4">
-        <v-col v-for="n in 6" :key="n" cols="6" sm="4" md="2">
-          <v-skeleton-loader type="card" height="250" class="rounded-lg"></v-skeleton-loader>
+
+    <!-- Sticky Tabs Skeleton -->
+    <div class="tabs-skeleton-bar">
+      <v-container class="skeleton-content-container py-3 d-flex ga-6">
+        <v-skeleton-loader v-for="n in 5" :key="n" type="text" width="80" class="bg-transparent" />
+      </v-container>
+    </div>
+
+    <!-- 2-Column Overview Skeleton -->
+    <v-container class="skeleton-content-container py-10">
+      <v-row>
+        <v-col cols="12" md="7" class="pr-md-10">
+          <v-skeleton-loader type="heading" width="180" class="mb-4 bg-transparent" />
+          <v-skeleton-loader type="text" width="260" class="mb-4 bg-transparent" />
+          <v-skeleton-loader type="paragraph" class="mb-3 bg-transparent" />
+          <v-skeleton-loader type="paragraph" class="bg-transparent" />
+        </v-col>
+        <v-col cols="12" md="5">
+          <v-skeleton-loader v-for="r in 6" :key="r" type="text" class="mb-4 bg-transparent" />
         </v-col>
       </v-row>
     </v-container>
@@ -28,12 +49,36 @@
 </template>
 
 <style scoped>
-.banner-wrapper {
-  position: relative;
+.media-skeleton-page {
+  min-height: 100vh;
+  background: var(--app-background);
+}
+
+.hero-skeleton {
   width: 100%;
-  min-height: 510px;
+  min-height: 76vh;
+  max-height: 820px;
   display: flex;
-  align-items: center;
-  overflow: hidden;
+  align-items: flex-end;
+  padding-top: 96px;
+  padding-bottom: 48px;
+  background: linear-gradient(135deg, rgba(140, 82, 255, 0.12) 0%, rgba(23, 25, 34, 0.9) 60%, var(--app-background) 100%);
+}
+
+.hero-skeleton-container,
+.skeleton-content-container {
+  max-width: 1360px;
+}
+
+.hero-skeleton-inner {
+  max-width: 680px;
+}
+
+.tabs-skeleton-bar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='light'] .tabs-skeleton-bar {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 </style>
