@@ -9,7 +9,7 @@ const validThemePreferences = ['system', 'light', 'dark']
 
 const getThemePreference = () => {
   const preference = localStorage.getItem(themePreferenceKey)
-  return validThemePreferences.includes(preference) ? preference : 'system'
+  return validThemePreferences.includes(preference) ? preference : 'dark'
 }
 
 const getSystemTheme = () => (
@@ -20,7 +20,7 @@ const vuetify = createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: 'light',
+    defaultTheme: 'dark',
     themes: {
       dark: {
         dark: true,

@@ -1,117 +1,114 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import MainView from '../views/MainView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import MovieDetailsView from '../views/MovieDetailsView.vue';
-import NotFoundView from '../views/NotFoundView.vue';
-import LibraryView from '../views/LibraryView.vue';
-import ProfilView from '../views/ProfilView.vue';
-import LegalNoticeView from '../views/LegalNoticeView.vue';
-import PrivacyPolicyView from '../views/PrivacyPolicyView.vue';
-import SerieDetailsView from '../views/SerieDetailsView.vue';
-import ForgotPasswordView from '../views/ForgotPasswordView.vue';
-import ResetPasswordView from '../views/ResetPasswordView.vue';
 
 const routes = [
-    {
-        path: '/login',
-        name: 'login',
-        component: LoginView,
-        alias: ['/register'],
-        meta: { public: true }
-    },
-    {
-        path: '/',
-        name: 'main',
-        component: MainView,
-        meta: { public: true }
-    },
-    {
-        path: '/movie/:id',
-        name: 'movieDetails',
-        component: MovieDetailsView,
-        meta: { public: true }
-    },
-    {
-      path: '/serie/:id',
-      name: 'serieDetails',
-      component: SerieDetailsView,
-      meta: { public: true }
-    },
-    {
-      path: '/person/:id',
-      name: 'personDetails',
-      component: () => import('../views/PersonDetails.vue'),
-      meta: { public: true }
-    },
-    {
-      path: '/library',
-      name: 'library',
-      component: LibraryView,
-      meta: { public: false }
-    },
-    {
-      path: '/profil',
-      name: 'profil',
-      component: ProfilView,
-      meta: { public: false }
-    },
-    {
-      path: '/legal-notice',
-      name: 'legalNotice',
-      component: LegalNoticeView,
-      meta: { public: true }
-    },
-    {
-      path: '/privacy-policy',
-      name: 'privacyPolicy',
-      component: PrivacyPolicyView,
-      meta: { public: true }
-    },
-    {
-      path: '/forgot-password',
-      name: 'forgotPassword',
-      component: ForgotPasswordView,
-      meta: { public: true, hideHeader: true, hideFooter: true }
-    },
-    {
-      path: '/reset-password',
-      name: 'resetPassword',
-      component: ResetPasswordView,
-      meta: { public: true, hideHeader: true, hideFooter: true }
-    },
-    //404
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'notFound',
-      component: NotFoundView,
-      meta: { public: true, hideHeader: true, hideFooter: true }
-    }
-]
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue'),
+    alias: ['/register'],
+    meta: { public: true }
+  },
+  {
+    path: '/',
+    name: 'main',
+    component: () => import('../views/MainView.vue'),
+    meta: { public: true, transparentHeader: true }
+  },
+  {
+    path: '/explore',
+    name: 'explore',
+    component: () => import('../views/ExploreView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: () => import('../views/SearchView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/movie/:id',
+    name: 'movieDetails',
+    component: () => import('../views/MovieDetailsView.vue'),
+    meta: { public: true, transparentHeader: true }
+  },
+  {
+    path: '/serie/:id',
+    name: 'serieDetails',
+    component: () => import('../views/SerieDetailsView.vue'),
+    meta: { public: true, transparentHeader: true }
+  },
+  {
+    path: '/person/:id',
+    name: 'personDetails',
+    alias: ['/director/:id'],
+    component: () => import('../views/PersonDetails.vue'),
+    meta: { public: true, transparentHeader: true }
+  },
+  {
+    path: '/library',
+    name: 'library',
+    component: () => import('../views/LibraryView.vue'),
+    meta: { public: false }
+  },
+  {
+    path: '/profil',
+    name: 'profil',
+    component: () => import('../views/ProfilView.vue'),
+    meta: { public: false }
+  },
+  {
+    path: '/legal-notice',
+    name: 'legalNotice',
+    component: () => import('../views/LegalNoticeView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/privacy-policy',
+    name: 'privacyPolicy',
+    component: () => import('../views/PrivacyPolicyView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgotPassword',
+    component: () => import('../views/ForgotPasswordView.vue'),
+    meta: { public: true, hideHeader: true, hideFooter: true }
+  },
+  {
+    path: '/reset-password',
+    name: 'resetPassword',
+    component: () => import('../views/ResetPasswordView.vue'),
+    meta: { public: true, hideHeader: true, hideFooter: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'notFound',
+    component: () => import('../views/NotFoundView.vue'),
+    meta: { public: true, hideHeader: true, hideFooter: true }
+  }
+];
 
 const router = createRouter({
-    history: createWebHistory(),
-    routes,
-    scrollBehavior(to, from, savedPosition) {
-      if (savedPosition) {
-        return savedPosition;
-      } else {
-        return { top: 0 };
-      }
-    }
-})
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    return { top: 0 };
+  }
+});
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
-  
+
   if (authStore.isAuthenticated && (to.path === '/login' || to.path === '/register')) {
     next('/');
-  }
-  else if (!to.meta.public && !authStore.isAuthenticated) {
+  } else if (!to.meta.public && !authStore.isAuthenticated) {
     next('/login');
   } else {
     next();
   }
 });
 
-export default router
+export default router;
